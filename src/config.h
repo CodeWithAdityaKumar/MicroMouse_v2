@@ -8,26 +8,29 @@
 #define PWMB     6    // Left motor PWM
 #define BIN1     10   // Left motor dir
 #define BIN2     9    // Left motor dir
-#define STBY     8    // Standby (HIGH = active)
+#define STBY     13    // Standby (HIGH = active)
 
 // Encoders
-#define ENC_L_A  2    // Left encoder channel A (INT0)
-#define ENC_L_B  4    // Left encoder channel B
-#define ENC_R_A  3    // Right encoder channel A (INT1)
+#define ENC_L_A  3    // Left encoder channel A (INT1)
+#define ENC_L_B  8    // Left encoder channel B
+#define ENC_R_A  2    // Right encoder channel A (INT0)
 #define ENC_R_B  7    // Right encoder channel B
+// Note: Right motor forward = -ve ticks, Left motor forward = +ve ticks
 
 // Ultrasonic Sensors
-#define US_FRONT_TRIG  A0
-#define US_FRONT_ECHO  A1
-#define US_LEFT_TRIG   A2
-#define US_LEFT_ECHO   A3
-// Right sensor: A6/A7 are analog-only — reassign to digital pins
-// #define US_RIGHT_TRIG  ??
-// #define US_RIGHT_ECHO  ??
+#define US_FRONT_TRIG  A2
+#define US_FRONT_ECHO  A3
+#define US_LEFT_TRIG   A1
+#define US_LEFT_ECHO   A0
+#define US_RIGHT_TRIG  A6   // ⚠️ Analog-only pin
+#define US_RIGHT_ECHO  A7   // ⚠️ Analog-only pin
 
-// Battery
-#define BATTERY_PIN    A6
-#define V_DIVIDER_RATIO 4.0
+// Power Regulation
+// L7805CV linear voltage regulator: Battery → 5V (not connected to any pin)
+
+// Push Button (start/stop)
+#define BUTTON_PIN     4    // D4 — uses INPUT_PULLUP (press = LOW)
+#define DEBOUNCE_MS    50   // Debounce delay
 
 // ─── Robot Physical Constants ──────────────────
 #define WHEEL_DIAMETER_MM    34.0
@@ -71,8 +74,7 @@
 #define SERIAL_BAUD        115200
 
 // ─── Battery Thresholds ────────────────────────
-#define BATTERY_LOW_V      10.5
-#define BATTERY_CRITICAL_V 9.9
+// No battery monitoring — using L7805CV regulator
 
 // ─── Direction Enum ────────────────────────────
 enum Direction { NORTH = 0, EAST = 1, SOUTH = 2, WEST = 3 };

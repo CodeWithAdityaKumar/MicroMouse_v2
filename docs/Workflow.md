@@ -31,15 +31,15 @@ Typical connection layout:
 | PWMB         | D6      |
 | BIN1         | D10     |
 | BIN2         | D9      |
-| STBY         | D8      |
+| STBY         | D13     |
 
 **Encoders**
 
 | Encoder | Arduino |
 | ------- | ------- |
-| Left A  | D2      |
-| Left B  | D4      |
-| Right A | D3      |
+| Left A  | D3      |
+| Left B  | D8      |
+| Right A | D2      |
 | Right B | D7      |
 
 **MPU6050**
@@ -55,13 +55,22 @@ Typical connection layout:
 
 | Sensor | Arduino |
 | ------ | ------- |
-| Front  | A0/A1   |
-| Left   | A2/A3   |
+| Front  | A2/A3   |
+| Left   | A1/A0   |
 | Right  | A6/A7   |
 
-**Voltage Divider**
+**Power Regulation (L7805CV)**
 
-Battery → divider → **A6/A7**
+Battery → L7805CV → 5V output (not connected to any Arduino pin)
+
+**Push Button**
+
+| Button | Arduino |
+| ------ | ------- |
+| Pin 1  | D4      |
+| Pin 2  | GND     |
+
+Uses `INPUT_PULLUP` — no external resistor needed.
 
 ---
 
@@ -75,7 +84,7 @@ Test in this order:
 2️⃣ Encoder count
 3️⃣ MPU yaw angle
 4️⃣ Ultrasonic distance
-5️⃣ Battery voltage
+5️⃣ Push button start/stop
 
 ⚠️ Do NOT combine everything yet.
 
@@ -350,42 +359,50 @@ Now run **fast run**.
 
 # 🧠 Complete Program Architecture
 
-Structure your code like this:
-
 ```
-main.ino
-
-motors.cpp / motors.h
-encoders.cpp / encoders.h
-imu.cpp / imu.h
-sensors.cpp / sensors.h
-pid.cpp / pid.h
-
-movement.cpp / movement.h
-
-maze.cpp / maze.h
-floodfill.cpp / floodfill.h
-navigation.cpp / navigation.h
-
-config.h
+v2/
+├── v2.ino                    # Entry point + state machine
+├── platformio.ini
+│
+├── src/
+│   ├── config.h              # Pins, constants, enums
+│   ├── motors.h / .cpp
+│   ├── encoders.h / .cpp
+│   ├── imu.h / .cpp
+│   ├── sensors.h / .cpp
+│   ├── pid.h / .cpp
+│   ├── movement.h / .cpp
+│   ├── maze.h / .cpp
+│   ├── floodfill.h / .cpp
+│   └── navigation.h / .cpp
+│
+├── tests/
+│   ├── test_motors/
+│   ├── test_encoders/
+│   ├── test_mpu6050/
+│   ├── test_ultrasonic/
+│   ├── test_battery/
+│   └── test_button/
+│
+└── docs/
+    ├── PRD.md / TRD.md / Workflow.md
+    ├── Pins.md / Circuit.md / Progress.md
+    └── stages/  (stage1–stage7)
 ```
 
 Main loop:
 
 ```
 setup()
+  → initAll()
+  → pinMode(BUTTON_PIN, INPUT_PULLUP)
 
-while(not goal)
-{
-    readSensors()
-    updateWalls()
-
-    floodfill()
-
-    nextDirection()
-
-    move()
-}
+loop()
+  → handleButton()     // debounced start/stop
+  → updateYawAngle()
+  → state machine:
+      IDLE → CALIBRATING → EXPLORING → GOAL → SPEED_RUN
+      (button press = emergency stop at any time)
 ```
 
 ---
@@ -438,15 +455,18 @@ or use analog threshold method
 DO NOT skip this order.
 
 ```
-1 Motor test
-2 Encoder test
-3 Move exact distance
-4 Turn 90 degree
-5 Wall detection
-6 Maze memory
-7 Flood fill simulation
-8 Real maze exploration
-9 Speed run
+ 1  Motor test              → tests/test_motors/
+ 2  Encoder test            → tests/test_encoders/
+ 3  MPU6050 yaw test        → tests/test_mpu6050/
+ 4  Ultrasonic test         → tests/test_ultrasonic/
+ 5  Push button test        → tests/test_button/
+ 6  Move exact distance     → movement.cpp
+ 7  Turn 90 degree          → movement.cpp + imu.cpp
+ 8  Wall detection          → sensors.cpp
+ 9  Maze memory             → maze.cpp
+10  Flood fill simulation   → floodfill.cpp
+11  Real maze exploration   → navigation.cpp
+12  Speed run               → navigation.cpp
 ```
 
 ---

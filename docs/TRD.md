@@ -3,7 +3,7 @@
 > **Version**: 2.0  
 > **Date**: 2026-03-05  
 > **Platform**: Arduino Nano (ATmega328P, 16 MHz, 5V)  
-> **References**: [PRD.md](file:///home/aditya/Arduino/Micromouse/v2/PRD.md) · [Workflow.md](file:///home/aditya/Arduino/Micromouse/v2/Workflow.md)
+> **References**: [PRD.md](file:///home/aditya/Arduino/Micromouse/v2/docs/PRD.md) · [Workflow.md](file:///home/aditya/Arduino/Micromouse/v2/docs/Workflow.md)
 
 ---
 
@@ -27,15 +27,16 @@
                    ┌────▼──────────▼───────────▼────┐
                    │         ARDUINO NANO            │
                    │                                 │
-                   │  D2,D4 ←── Left Encoder         │
-                   │  D3,D7 ←── Right Encoder        │
+                   │  D3,D8 ←── Left Encoder         │
+                   │  D2,D7 ←── Right Encoder        │
                    │  D5,D11,D12 ──→ Right Motor     │
                    │  D6,D9,D10  ──→ Left Motor      │
-                   │  D8 ──→ STBY                    │
+                   │  D13 ──→ STBY                    │
+                   │  D4 ←── Push Button              │
                    │  A4,A5 ←→ MPU6050 (I²C)         │
-                   │  A0,A1 ←→ Front Ultrasonic      │
-                   │  A2,A3 ←→ Left Ultrasonic       │
-                   │  A6/A7 ←── Battery/Right US     │
+                   │  A1,A0 ←→ Left Ultrasonic       │
+                   │  A2,A3 ←→ Front Ultrasonic      │
+                   │  A6,A7 ←→ Right Ultrasonic      │
                    └────────────────────────────────┘
 ```
 
@@ -69,7 +70,7 @@
 | Left PWM    | PWMB       | D6          | PWM Output     |
 | Left Dir 1  | BIN1       | D10         | Digital Output |
 | Left Dir 2  | BIN2       | D9          | Digital Output |
-| Standby     | STBY       | D8          | Digital Output |
+| Standby     | STBY       | D13         | Digital Output |
 
 #### Motor Control Truth Table
 
@@ -112,9 +113,9 @@ void brake();
 
 | Signal              | Arduino Pin | Interrupt | Notes                     |
 | ------------------- | ----------- | --------- | ------------------------- |
-| Left A (Channel A)  | D2          | INT0      | RISING edge ISR           |
-| Left B (Channel B)  | D4          | —         | Direction read inside ISR |
-| Right A (Channel A) | D3          | INT1      | RISING edge ISR           |
+| Left A (Channel A)  | D3          | INT1      | RISING edge ISR           |
+| Left B (Channel B)  | D8          | —         | Direction read inside ISR |
+| Right A (Channel A) | D2          | INT0      | RISING edge ISR           |
 | Right B (Channel B) | D7          | —         | Direction read inside ISR |
 
 #### Encoder Specifications
@@ -150,8 +151,8 @@ void rightEncoderISR() {
 }
 
 // In setup():
-attachInterrupt(digitalPinToInterrupt(2), leftEncoderISR, RISING);
-attachInterrupt(digitalPinToInterrupt(3), rightEncoderISR, RISING);
+attachInterrupt(digitalPinToInterrupt(3), leftEncoderISR, RISING);
+attachInterrupt(digitalPinToInterrupt(2), rightEncoderISR, RISING);
 ```
 
 #### Critical Notes
@@ -255,15 +256,11 @@ gyroBias = mean;
 
 | Sensor | Trig Pin | Echo Pin | Orientation                |
 | ------ | -------- | -------- | -------------------------- |
-| Front  | A0       | A1       | 0° (forward)               |
-| Left   | A2       | A3       | 90° (perpendicular left)   |
-| Right  | \*       | \*       | -90° (perpendicular right) |
+| Front  | A2       | A3       | 0° (forward)               |
+| Left   | A1       | A0       | 90° (perpendicular left)   |
+| Right  | A6       | A7       | -90° (perpendicular right) |
 
-> ⚠️ **Right sensor pin assignment**: A6/A7 are analog-only on Nano and cannot do `digitalRead()` needed for `pulseIn()`. **Solution options:**
->
-> 1. Reassign to remaining digital pins (e.g., D13 for Trig, and share/multiplex)
-> 2. Use `analogRead()` threshold method on A7 (non-standard, unreliable)
-> 3. Use a pin expander or shift one sensor to STBY pin (D8) if STBY can be hardwired HIGH
+> ⚠️ **Right sensor**: A6/A7 are analog-only on Nano — cannot use standard `pulseIn()`. Use `analogRead()` threshold detection for echo on A7.
 
 #### HC-SR04 Specifications
 
@@ -354,38 +351,99 @@ Physical shielding (foam/tape) between adjacent sensor cones helps.
 
 ---
 
-### 2.5 Battery Monitoring
+### 2.5 Power Regulation — L7805CV
 
 #### Circuit
 
 ```
-Battery (11.1V) ──┬── R1 (30kΩ) ──┬── R2 (10kΩ) ──┬── GND
-                   │               │                │
-                   │           Analog Pin ←──────────┘
-                   │          (reads V_divider)
-                   └── To TB6612 VM
+3S LiPo (11.1V)
+    │
+    ├──► TB6612 VM (motor power)
+    │
+    └──► L7805CV Linear Voltage Regulator
+              │
+              OUT ──► 5V (to Arduino, sensors, logic)
+              GND ──► GND
+
+    Not connected to any Arduino pin.
 ```
 
-#### Calculation
+#### L7805CV Specifications
+
+| Parameter          | Value          |
+| ------------------ | -------------- |
+| Input Voltage      | 7V – 35V       |
+| Output Voltage     | 5V (regulated) |
+| Max Output Current | 1.5A           |
+| Dropout Voltage    | ~2V            |
+
+> **Note**: No battery voltage monitoring is implemented. Ensure battery is charged before each run.
+
+---
+
+### 2.6 Push Button (Start/Stop)
+
+#### Pin Assignment
+
+| Signal | Arduino Pin | Mode         | Notes                       |
+| ------ | ----------- | ------------ | --------------------------- |
+| Button | D4          | INPUT_PULLUP | Press = LOW, Release = HIGH |
+
+#### Debounce Implementation
 
 ```cpp
-// Voltage divider ratio
-float V_DIVIDER_RATIO = (30.0 + 10.0) / 10.0; // = 4.0
+#define BUTTON_PIN 4
+#define DEBOUNCE_MS 50
 
-int rawADC = analogRead(BATTERY_PIN);
-float V_adc = rawADC * (5.0 / 1023.0);
-float V_battery = V_adc * V_DIVIDER_RATIO;
+static bool lastButtonState = HIGH;
+static unsigned long lastDebounceTime = 0;
+
+void handleButton() {
+  bool reading = digitalRead(BUTTON_PIN);
+
+  if (reading != lastButtonState) {
+    lastDebounceTime = millis();
+  }
+
+  if ((millis() - lastDebounceTime) > DEBOUNCE_MS) {
+    static bool currentState = HIGH;
+    if (reading != currentState) {
+      currentState = reading;
+      if (currentState == LOW) {
+        // Button pressed — toggle state
+        onButtonPress();
+      }
+    }
+  }
+
+  lastButtonState = reading;
+}
+
+void onButtonPress() {
+  switch (botState) {
+    case STATE_IDLE:
+      botState = STATE_CALIBRATING;
+      break;
+    case STATE_EXPLORING:
+    case STATE_MOVING:
+    case STATE_TURNING:
+    case STATE_SPEED_RUN:
+      botState = STATE_STOPPED; // Emergency stop
+      brake();
+      break;
+    case STATE_STOPPED:
+      botState = STATE_IDLE; // Reset
+      break;
+  }
+}
 ```
 
-#### Battery Thresholds (3S LiPo)
+#### Wiring
 
-| State                | Voltage | Action                                |
-| -------------------- | ------- | ------------------------------------- |
-| Full                 | > 12.0V | Normal operation                      |
-| Nominal              | 11.1V   | Normal operation                      |
-| Low warning          | < 10.5V | Reduce speed, LED warning             |
-| Critical             | < 9.9V  | Stop immediately, save maze to EEPROM |
-| Danger (cell damage) | < 9.0V  | NEVER discharge this low              |
+```
+D4 ──── Button ──── GND
+(no external resistor needed — uses internal pullup)
+```
 
 ---
 

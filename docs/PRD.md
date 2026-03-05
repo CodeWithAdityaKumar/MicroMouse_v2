@@ -26,7 +26,7 @@ Micromouse v2 is an autonomous maze-solving robot that navigates an 8×8 grid ma
 
 - **Arduino Nano**: 32 KB flash, 2 KB SRAM — memory-efficient data structures required
 - **Ultrasonic sensors**: ~30 ms per reading — slower than IR, limits max exploration speed
-- **3S LiPo (11.7V)**: Requires voltage regulation and battery monitoring
+- **3S LiPo (11.1V)**: Requires voltage regulation via L7805CV
 - **College project scope**: Prioritize reliability over competition-grade speed
 
 ---
@@ -35,17 +35,18 @@ Micromouse v2 is an autonomous maze-solving robot that navigates an 8×8 grid ma
 
 ### 2.1 Bill of Materials
 
-| Component       | Model / Spec                            | Qty |
-| --------------- | --------------------------------------- | --- |
-| Microcontroller | Arduino Nano (ATmega328P, 5V)           | 1   |
-| Motor Driver    | TB6612FNG Dual H-Bridge                 | 1   |
-| Motors          | N20 Encoder DC Motors                   | 2   |
-| IMU             | MPU6050 (Gyro + Accelerometer)          | 1   |
-| Wall Sensors    | HC-SR04 Ultrasonic (×3)                 | 3   |
-| Battery         | 3S LiPo 11.1V (~11.7V full)             | 1   |
-| Voltage Divider | Resistor network for battery monitoring | 1   |
-| Wheels          | 34 mm diameter                          | 2   |
-| Caster          | Ball caster (rear support)              | 1   |
+| Component       | Model / Spec                         | Qty |
+| --------------- | ------------------------------------ | --- |
+| Microcontroller | Arduino Nano (ATmega328P, 5V)        | 1   |
+| Motor Driver    | TB6612FNG Dual H-Bridge              | 1   |
+| Motors          | N20 Encoder DC Motors                | 2   |
+| IMU             | MPU6050 (Gyro + Accelerometer)       | 1   |
+| Wall Sensors    | HC-SR04 Ultrasonic (×3)              | 3   |
+| Battery         | 3S LiPo 11.1V (~11.7V full)          | 1   |
+| Voltage Reg.    | L7805CV linear regulator (5V output) | 1   |
+| Push Button     | Tactile momentary switch             | 1   |
+| Wheels          | 34 mm diameter                       | 2   |
+| Caster          | Ball caster (rear support)           | 1   |
 
 ### 2.2 Pin Mapping
 
@@ -59,15 +60,15 @@ Micromouse v2 is an autonomous maze-solving robot that navigates an 8×8 grid ma
 | PWMB   | D6          | Left motor speed               |
 | BIN1   | D10         | Left motor direction           |
 | BIN2   | D9          | Left motor direction           |
-| STBY   | D8          | Driver standby (HIGH = active) |
+| STBY   | D13         | Driver standby (HIGH = active) |
 
 #### Encoders
 
 | Signal          | Arduino Pin | Notes                   |
 | --------------- | ----------- | ----------------------- |
-| Left Encoder A  | D2          | Hardware interrupt INT0 |
-| Left Encoder B  | D4          | Direction detection     |
-| Right Encoder A | D3          | Hardware interrupt INT1 |
+| Left Encoder A  | D3          | Hardware interrupt INT1 |
+| Left Encoder B  | D8          | Direction detection     |
+| Right Encoder A | D2          | Hardware interrupt INT0 |
 | Right Encoder B | D7          | Direction detection     |
 
 #### MPU6050 (I²C)
@@ -83,17 +84,23 @@ Micromouse v2 is an autonomous maze-solving robot that navigates an 8×8 grid ma
 
 | Sensor | Trig Pin | Echo Pin |
 | ------ | -------- | -------- |
-| Front  | A0       | A1       |
-| Left   | A2       | A3       |
+| Front  | A2       | A3       |
+| Left   | A1       | A0       |
 | Right  | A6       | A7       |
 
-> ⚠️ **Note**: A6/A7 on Nano are **analog-only** pins — they cannot do `digitalRead()`. Echo signals on these pins require `analogRead()` threshold detection or use a different pin assignment.
+> ⚠️ **Note**: A6/A7 on Nano are **analog-only** pins — they cannot do `digitalRead()` or `pulseIn()`. The right sensor echo on A7 requires `analogRead()` threshold detection.
 
-#### Battery Monitor
+#### Push Button (Start/Stop)
 
-| Signal                 | Arduino Pin |
-| ---------------------- | ----------- |
-| Voltage Divider Output | A6 or A7    |
+| Signal | Arduino Pin | Notes                                      |
+| ------ | ----------- | ------------------------------------------ |
+| Button | D4          | INPUT_PULLUP — press = LOW, 50 ms debounce |
+
+#### Power Regulation
+
+| Component | Notes                                         |
+| --------- | --------------------------------------------- |
+| L7805CV   | Battery → 5V output, not connected to any pin |
 
 ### 2.3 Key Calculations
 
@@ -134,21 +141,43 @@ Micromouse v2 is an autonomous maze-solving robot that navigates an 8×8 grid ma
 
 ```
 v2/
-├── PRD.md                  # This document
-├── main.ino                # Entry point, state machine, main loop
+├── v2.ino                        # Entry point, state machine, main loop
+├── platformio.ini                # PlatformIO build config
 │
-├── movement.h / .cpp       # moveForward(), turnLeft90(), turnRight90(), turnBack()
-├── pid.h / .cpp            # PID controller for straight-line + turn correction
-├── encoders.h / .cpp       # ISR-driven tick counters, distance calculation
-├── sensors.h / .cpp        # Ultrasonic read + averaging, wall detection booleans
-├── imu.h / .cpp            # MPU6050 init, calibration, yaw integration
-├── motors.h / .cpp         # TB6612 low-level: setMotorSpeed(), brake()
+├── src/                          # Source modules
+│   ├── config.h                  # All pin definitions, constants, tuning parameters
+│   ├── motors.h / .cpp           # TB6612 low-level: setMotors(), brake()
+│   ├── encoders.h / .cpp         # ISR-driven tick counters, distance calculation
+│   ├── imu.h / .cpp              # MPU6050 init, calibration, yaw integration
+│   ├── sensors.h / .cpp          # Ultrasonic read + averaging, wall detection
+│   ├── pid.h / .cpp              # PID controller for straight-line + turn correction
+│   ├── movement.h / .cpp         # moveForward(), turnLeft90(), turnRight90(), turnBack()
+│   ├── maze.h / .cpp             # Cell struct, wall storage, maze initialization
+│   ├── floodfill.h / .cpp        # Flood fill algorithm, distance recalculation
+│   └── navigation.h / .cpp       # Direction logic, path storage, speed run replay
 │
-├── maze.h / .cpp           # Cell struct, wall storage, maze initialization
-├── floodfill.h / .cpp      # Flood fill algorithm, distance recalculation
-├── navigation.h / .cpp     # Direction logic, path storage, speed run replay
+├── tests/                        # Hardware test sketches (Stage 1)
+│   ├── test_motors/
+│   ├── test_encoders/
+│   ├── test_mpu6050/
+│   ├── test_ultrasonic/
+│   └── test_battery/
 │
-└── config.h                # All pin definitions, constants, tuning parameters
+└── docs/                         # Documentation
+    ├── PRD.md                    # This document
+    ├── TRD.md                    # Technical Requirements
+    ├── Workflow.md               # Development workflow
+    ├── Pins.md                   # Pin mapping reference
+    ├── Circuit.md                # Wiring diagrams
+    ├── Progress.md               # Development progress tracker
+    └── stages/                   # Stage-by-stage breakdowns
+        ├── stage1-hardware-setup.md
+        ├── stage2-motion-control.md
+        ├── stage3-wall-detection.md
+        ├── stage4-maze-representation.md
+        ├── stage5-flood-fill.md
+        ├── stage6-exploration.md
+        └── stage7-speed-run.md
 ```
 
 ### 3.3 Data Structures
@@ -209,7 +238,7 @@ struct RobotState {
 | HW-02 | Read ultrasonic distance for front, left, right sensors           | P0       |
 | HW-03 | Initialize MPU6050 and read yaw angle via Z-axis gyro integration | P0       |
 | HW-04 | Control motor speed and direction via TB6612FNG                   | P0       |
-| HW-05 | Monitor battery voltage via voltage divider on analog pin         | P1       |
+| HW-05 | Power via L7805CV voltage regulator (5V output)                   | P1       |
 | HW-06 | Active braking (both H-bridge pins LOW) for sharp stops           | P1       |
 
 ### 4.2 Motion Control Layer
@@ -408,7 +437,7 @@ At cell (x, y) facing direction D:
 | 1.2  | Encoder tick count     | Ticks increment consistently; correct direction |
 | 1.3  | MPU6050 yaw            | Angle reads ~90° on 90° hand rotation           |
 | 1.4  | Ultrasonic distance    | Reads ~10 cm for object at 10 cm (±2 cm)        |
-| 1.5  | Battery voltage        | ADC reading maps to correct voltage             |
+| 1.5  | Power regulation       | L7805CV provides stable 5V from battery         |
 
 ### Stage 2 — Motion Control
 

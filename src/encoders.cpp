@@ -5,15 +5,30 @@ volatile long leftTicks = 0;
 volatile long rightTicks = 0;
 
 void leftISR() {
-  // TODO: Read channel B to determine direction
+  // Left motor forward = +ve ticks
+  if (digitalRead(ENC_L_B) == HIGH)
+    leftTicks++;
+  else
+    leftTicks--;
 }
 
 void rightISR() {
-  // TODO: Read channel B to determine direction
+  // Right motor forward = -ve ticks
+  if (digitalRead(ENC_R_B) == HIGH)
+    rightTicks++;
+  else
+    rightTicks--;
 }
 
 void initEncoders() {
-  // TODO: Set pin modes and attach interrupts
+  pinMode(ENC_L_A, INPUT);
+  pinMode(ENC_L_B, INPUT);
+  pinMode(ENC_R_A, INPUT);
+  pinMode(ENC_R_B, INPUT);
+
+  // Left encoder on D3 (INT1), Right encoder on D2 (INT0)
+  attachInterrupt(digitalPinToInterrupt(ENC_L_A), leftISR, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENC_R_A), rightISR, RISING);
 }
 
 void resetEncoders() {

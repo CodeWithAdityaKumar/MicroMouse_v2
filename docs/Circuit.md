@@ -13,15 +13,15 @@
                           └──┬──────┬───────┬───┘
                              │      │       │
                              │      │       │
-                    ┌────────▼──┐   │   ┌───▼────────────────────────┐
-                    │ Voltage   │   │   │       TB6612FNG            │
-                    │ Divider   │   │   │                            │
-                    │           │   │   │  VM ◄── Battery 11.1V     │
-                    │ R1=30kΩ   │   │   │  VCC ◄── 5V               │
-                    │ R2=10kΩ   │   │   │  GND ◄── GND              │
-                    │           │   │   │                            │
-                    │ OUT──►A6  │   │   │  STBY──► D8               │
-                    └───────────┘   │   │                            │
+                    ┌─────────────┐   │   ┌───►────────────────────────┐
+                    │  L7805CV    │   │   │       TB6612FNG            │
+                    │  Regulator  │   │   │                            │
+                    │             │   │   │  VM ◄── Battery 11.1V     │
+                    │ IN ◄── Bat  │   │   │  VCC ◄── 5V               │
+                    │ OUT ─► 5V   │   │   │  GND ◄── GND              │
+                    │ GND ─► GND  │   │   │                            │
+                    │             │   │   │  STBY──► D13              │
+                    └─────────────┘   │   │                            │
                                     │   │  ┌─RIGHT MOTOR─┐          │
                           ┌─────────▼─┐ │  │ PWMA──► D5  │          │
                           │  Arduino  │ │  │ AIN1──► D12  │          │
@@ -48,18 +48,18 @@
                     ┌─────────────────────┐
                     │     ARDUINO NANO    │
                     │                     │
-         Enc L-A ──►│ D2            D13 │──► (free / LED)
-         Enc R-A ──►│ D3            D12 │──► AIN1 (Right dir)
-         Enc L-B ──►│ D4            D11 │──► AIN2 (Right dir)
+         Enc R-A ──►│ D2            D13 │──► STBY
+         Enc L-A ──►│ D3            D12 │──► AIN1 (Right dir)
+      Push Btn  ──►│ D4            D11 │──► AIN2 (Right dir)
      Right PWM  ◄──│ D5            D10 │──► BIN1 (Left dir)
       Left PWM  ◄──│ D6             D9 │──► BIN2 (Left dir)
-         Enc R-B ──►│ D7             D8 │──► STBY
+         Enc R-B ──►│ D7             D8 │◄── Enc L-B
                     │                     │
-    Front Trig  ◄──│ A0             A7 │◄── ⚠️ Analog only
-    Front Echo  ──►│ A1             A6 │◄── Battery / ⚠️ Analog only
-     Left Trig  ◄──│ A2             5V │──► VCC bus
-     Left Echo  ──►│ A3            GND │──► GND bus
-    MPU6050 SDA ◄─►│ A4            VIN │◄── Battery 11.1V
+     Left Echo  ──►│ A0             A7 │◄── Right US Echo (⚠️ analog)
+     Left Trig  ◄──│ A1             A6 │◄── Right US Trig (⚠️ analog)
+    Front Trig  ◄──│ A2             5V │──► VCC bus
+    Front Echo  ──►│ A3            GND │──► GND bus
+    MPU6050 SDA ◄─►│ A4            VIN │◄── (not used — powered via 5V pin)
     MPU6050 SCL ◄─►│ A5                │
                     └─────────────────────┘
 ```
@@ -87,8 +87,8 @@
 ```
     Left Encoder       Arduino Nano         Right Encoder
     ┌───────────┐      ┌───────────┐       ┌───────────┐
-    │ Channel A │──────│ D2 (INT0) │       │ Channel A │──────│ D3 (INT1) │
-    │ Channel B │──────│ D4        │       │ Channel B │──────│ D7        │
+    │ Channel A │──────│ D3 (INT1) │       │ Channel A │──────│ D2 (INT0) │
+    │ Channel B │──────│ D8        │       │ Channel B │──────│ D7        │
     │ VCC       │──────│ 5V        │       │ VCC       │──────│ 5V        │
     │ GND       │──────│ GND       │       │ GND       │──────│ GND       │
     └───────────┘      └───────────┘       └───────────┘
@@ -105,7 +105,7 @@
     │ VCC          │◄── 5V             │           │
     │ GND          │◄── GND            │           │
     │              │                   │           │
-    │ STBY         │───────────────────│ D8        │  (HIGH = active)
+    │ STBY         │───────────────────│ D13       │  (HIGH = active)
     │              │                   │           │
     │ PWMA (Right) │───────────────────│ D5  (PWM) │
     │ AIN1         │───────────────────│ D12       │
@@ -129,42 +129,55 @@
     Front HC-SR04       Arduino Nano        Left HC-SR04
     ┌───────────┐       ┌───────────┐       ┌───────────┐
     │ VCC       │───────│ 5V        │───────│ VCC       │
-    │ Trig      │───────│ A0        │       │ Trig      │───────│ A2  │
-    │ Echo      │───────│ A1        │       │ Echo      │───────│ A3  │
+    │ Trig      │───────│ A2        │       │ Trig      │───────│ A1  │
+    │ Echo      │───────│ A3        │       │ Echo      │───────│ A0  │
     │ GND       │───────│ GND       │───────│ GND       │
     └───────────┘       └───────────┘       └───────────┘
 
     Right HC-SR04
     ┌───────────┐
     │ VCC       │──► 5V
-    │ Trig      │──► ⚠️ Needs digital pin (D13 or reassign)
-    │ Echo      │──► ⚠️ Needs digital pin (D8 if STBY hardwired)
+    │ Trig      │──► A6 (⚠️ analog-only pin)
+    │ Echo      │──► A7 (⚠️ analog-only pin — use analogRead threshold)
     │ GND       │──► GND
     └───────────┘
 ```
 
 ---
 
-## Voltage Divider (Battery Monitor)
+## L7805CV Voltage Regulator
 
 ```
-    Battery+  ────┐
-                  │
-               ┌──┴──┐
-               │ R1   │  30kΩ
-               └──┬──┘
-                  │
-                  ├──────────► A6 (Arduino Nano)
-                  │
-               ┌──┴──┐
-               │ R2   │  10kΩ
-               └──┬──┘
-                  │
-    GND ──────────┘
+    3S LiPo (11.1V)
+        │
+    ┌───▼────────┐
+    │ L7805CV    │
+    │   IN  OUT  │───► 5V (to all logic devices)
+    │   GND      │───► GND
+    └────────────┘
 
-    Divider ratio = (R1 + R2) / R2 = 4.0
-    Max input to A6 = 11.1V / 4.0 = 2.775V (safe for 5V ADC)
+    Not connected to any Arduino pin.
+    Provides regulated 5V to:
+      • Arduino Nano (5V pin)
+      • TB6612 VCC
+      • MPU6050
+      • HC-SR04 sensors
+      • Encoders
 ```
+
+---
+
+## Push Button Wiring
+
+```
+    Arduino Nano D4 ──┬── Tactile Button ──┬── GND
+                       │                    │
+                       └── Uses INPUT_PULLUP (internal pull-up resistor)
+                           Press = LOW, Release = HIGH
+                           Software debounce: 50 ms
+```
+
+No external resistor needed. The button is used to start/stop the robot.
 
 ---
 
@@ -195,23 +208,21 @@
          │
          ├──► TB6612 VM (motor power, up to 13.5V)
          │
-         ├──► Voltage Divider → A6 (battery monitoring)
-         │
-         └──► Arduino Nano VIN
+         └──► L7805CV Regulator → 5V output
                    │
-                   └──► 5V regulator (onboard)
-                          │
-                          ├──► TB6612 VCC (logic power)
-                          ├──► MPU6050 VCC
-                          ├──► 3× HC-SR04 VCC
-                          └──► 2× Encoder VCC
+                   ├──► Arduino Nano (5V pin)
+                   ├──► TB6612 VCC (logic power)
+                   ├──► MPU6050 VCC
+                   ├──► 3× HC-SR04 VCC
+                   ├──► 2× Encoder VCC
+                   └──► Push button (via INPUT_PULLUP)
 ```
 
 ---
 
 ## ⚠️ Important Notes
 
-1. **A6/A7 limitation**: Cannot use `pulseIn()` — reassign right ultrasonic to digital pins
+1. **A6/A7 limitation**: Analog-only pins — right ultrasonic uses `analogRead()` threshold instead of `pulseIn()`
 2. **STBY must be HIGH** before motors will respond — set in `setup()`
 3. **Encoder interrupts** only work on D2 (INT0) and D3 (INT1) on Nano
 4. **Do NOT power servos/motors from Nano 5V** — use TB6612 VM from battery
