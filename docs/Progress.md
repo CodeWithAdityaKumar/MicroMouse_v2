@@ -8,13 +8,13 @@
 
 ### Component Tests
 
-| #   | Test                   |   Status   | Date       |
-| --- | ---------------------- | :--------: | ---------- |
-| 1   | Motor forward/backward |  ✅ Done   | 2026-03-05 |
-| 2   | Encoder tick count     | ⬜ Pending |            |
-| 3   | MPU6050 yaw angle      |  ✅ Done   | 2026-03-05 |
-| 4   | Ultrasonic distance    | ⬜ Pending |            |
-| 5   | Push button            |  ✅ Done   | 2026-03-05 |
+| #   | Test                   | Status  | Date       |
+| --- | ---------------------- | :-----: | ---------- |
+| 1   | Motor forward/backward | ✅ Done | 2026-03-05 |
+| 2   | Encoder tick count     | ✅ Done | 2026-03-05 |
+| 3   | MPU6050 yaw angle      | ✅ Done | 2026-03-05 |
+| 4   | Ultrasonic distance    | ✅ Done | 2026-03-05 |
+| 5   | Push button            | ✅ Done | 2026-03-05 |
 
 ---
 
