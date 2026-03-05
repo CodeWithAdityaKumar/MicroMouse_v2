@@ -96,8 +96,8 @@ void turnLeft90() {
 
 void turnBack() {
   resetEncoders();
-  // 180 degrees is exactly two 90-degree turns
-  long targetTicks = TICKS_PER_90DEG_R * 2; 
+  // Uses its own dedicated tuning constant
+  long targetTicks = TICKS_PER_180DEG; 
   
   // Start turning right
   setMotors(BASE_SPEED, -BASE_SPEED);

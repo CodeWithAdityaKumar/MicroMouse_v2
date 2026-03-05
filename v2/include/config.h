@@ -47,6 +47,7 @@
 // Tunable Turn Ticks (Adjust these based on physical testing!)
 #define TICKS_PER_90DEG_L    360/2     // Ticks for Left 90° turn
 #define TICKS_PER_90DEG_R    360/2     // Ticks for Right 90° turn
+#define TICKS_PER_180DEG     390       // Ticks for 180° turn (tune this separately!)
 
 // ─── Maze Constants ────────────────────────────
 #define MAZE_SIZE            8
@@ -62,7 +63,7 @@
 #define TURN_KP        4.0
 #define WALL_KP        0.5
 #define MAX_INTEGRAL   1000.0
-#define BASE_SPEED     100
+#define BASE_SPEED     150
 #define SPEED_RUN_SPEED 150
 #define MAX_TURN_SPEED 150
 #define MIN_TURN_SPEED 40
