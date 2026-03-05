@@ -54,22 +54,22 @@ Micromouse v2 is an autonomous maze-solving robot that navigates an 8×8 grid ma
 
 | Signal | Arduino Pin | Function                       |
 | ------ | ----------- | ------------------------------ |
-| PWMA   | D5          | Right motor speed              |
-| AIN1   | D12         | Right motor direction          |
-| AIN2   | D11         | Right motor direction          |
-| PWMB   | D6          | Left motor speed               |
-| BIN1   | D10         | Left motor direction           |
-| BIN2   | D9          | Left motor direction           |
+| PWMA   | D5          | Left motor speed               |
+| AIN1   | D12         | Left motor direction           |
+| AIN2   | D11         | Left motor direction           |
+| PWMB   | D6          | Right motor speed              |
+| BIN1   | D10         | Right motor direction          |
+| BIN2   | D9          | Right motor direction          |
 | STBY   | D13         | Driver standby (HIGH = active) |
 
 #### Encoders
 
 | Signal          | Arduino Pin | Notes                   |
 | --------------- | ----------- | ----------------------- |
-| Left Encoder A  | D3          | Hardware interrupt INT1 |
-| Left Encoder B  | D8          | Direction detection     |
-| Right Encoder A | D2          | Hardware interrupt INT0 |
-| Right Encoder B | D7          | Direction detection     |
+| Left Encoder A  | D2          | Hardware interrupt INT0 |
+| Left Encoder B  | D7          | Direction detection     |
+| Right Encoder A | D3          | Hardware interrupt INT1 |
+| Right Encoder B | D8          | Direction detection     |
 
 #### MPU6050 (I²C)
 
@@ -82,13 +82,13 @@ Micromouse v2 is an autonomous maze-solving robot that navigates an 8×8 grid ma
 
 #### Ultrasonic Sensors
 
-| Sensor | Trig Pin | Echo Pin |
-| ------ | -------- | -------- |
-| Front  | A2       | A3       |
-| Left   | A1       | A0       |
-| Right  | A6       | A7       |
+| Sensor | Trig Pin         | Echo Pin |
+| ------ | ---------------- | -------- |
+| Front  | A2 (shared trig) | A3       |
+| Left   | A2 (shared trig) | A0       |
+| Right  | A2 (shared trig) | A1       |
 
-> ⚠️ **Note**: A6/A7 on Nano are **analog-only** pins — they cannot do `digitalRead()` or `pulseIn()`. The right sensor echo on A7 requires `analogRead()` threshold detection.
+> All 3 sensor trigs wired together to A2. Sensors read sequentially with 30ms delay between reads. A6/A7 are now free.
 
 #### Push Button (Start/Stop)
 

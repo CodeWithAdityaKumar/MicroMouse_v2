@@ -48,16 +48,16 @@
                     ┌─────────────────────┐
                     │     ARDUINO NANO    │
                     │                     │
-         Enc R-A ──►│ D2            D13 │──► STBY
-         Enc L-A ──►│ D3            D12 │──► AIN1 (Right dir)
-      Push Btn  ──►│ D4            D11 │──► AIN2 (Right dir)
-     Right PWM  ◄──│ D5            D10 │──► BIN1 (Left dir)
-      Left PWM  ◄──│ D6             D9 │──► BIN2 (Left dir)
-         Enc R-B ──►│ D7             D8 │◄── Enc L-B
+         Enc L-A ──►│ D2            D13 │──► STBY
+         Enc R-A ──►│ D3            D12 │──► AIN1 (Left dir)
+      Push Btn  ──►│ D4            D11 │──► AIN2 (Left dir)
+      Left PWM  ◄──│ D5            D10 │──► BIN1 (Right dir)
+     Right PWM  ◄──│ D6             D9 │──► BIN2 (Right dir)
+         Enc L-B ──►│ D7             D8 │◄── Enc R-B
                     │                     │
-     Left Echo  ──►│ A0             A7 │◄── Right US Echo (⚠️ analog)
-     Left Trig  ◄──│ A1             A6 │◄── Right US Trig (⚠️ analog)
-    Front Trig  ◄──│ A2             5V │──► VCC bus
+     Left Echo  ──►│ A0             A7 │◄── (free)
+    Right Echo  ──►│ A1             A6 │◄── (free)
+  Shared Trig  ◄──│ A2             5V │──► VCC bus
     Front Echo  ──►│ A3            GND │──► GND bus
     MPU6050 SDA ◄─►│ A4            VIN │◄── (not used — powered via 5V pin)
     MPU6050 SCL ◄─►│ A5                │
@@ -87,8 +87,8 @@
 ```
     Left Encoder       Arduino Nano         Right Encoder
     ┌───────────┐      ┌───────────┐       ┌───────────┐
-    │ Channel A │──────│ D3 (INT1) │       │ Channel A │──────│ D2 (INT0) │
-    │ Channel B │──────│ D8        │       │ Channel B │──────│ D7        │
+    │ Channel A │──────│ D2 (INT0) │       │ Channel A │──────│ D3 (INT1) │
+    │ Channel B │──────│ D7        │       │ Channel B │──────│ D8        │
     │ VCC       │──────│ 5V        │       │ VCC       │──────│ 5V        │
     │ GND       │──────│ GND       │       │ GND       │──────│ GND       │
     └───────────┘      └───────────┘       └───────────┘
@@ -107,17 +107,17 @@
     │              │                   │           │
     │ STBY         │───────────────────│ D13       │  (HIGH = active)
     │              │                   │           │
-    │ PWMA (Right) │───────────────────│ D5  (PWM) │
+    │ PWMA (Left)  │───────────────────│ D5  (PWM) │
     │ AIN1         │───────────────────│ D12       │
     │ AIN2         │───────────────────│ D11       │
-    │ MOTORA+      │──► Right Motor +  │           │
-    │ MOTORA-      │──► Right Motor -  │           │
+    │ MOTORA+      │──► Left Motor +   │           │
+    │ MOTORA-      │──► Left Motor -   │           │
     │              │                   │           │
-    │ PWMB (Left)  │───────────────────│ D6  (PWM) │
+    │ PWMB (Right) │───────────────────│ D6  (PWM) │
     │ BIN1         │───────────────────│ D10       │
     │ BIN2         │───────────────────│ D9        │
-    │ MOTORB+      │──► Left Motor +   │           │
-    │ MOTORB-      │──► Left Motor -   │           │
+    │ MOTORB+      │──► Right Motor +  │           │
+    │ MOTORB-      │──► Right Motor -  │           │
     └──────────────┘                   └───────────┘
 ```
 
@@ -126,21 +126,18 @@
 ## Ultrasonic Sensor Wiring
 
 ```
-    Front HC-SR04       Arduino Nano        Left HC-SR04
-    ┌───────────┐       ┌───────────┐       ┌───────────┐
-    │ VCC       │───────│ 5V        │───────│ VCC       │
-    │ Trig      │───────│ A2        │       │ Trig      │───────│ A1  │
-    │ Echo      │───────│ A3        │       │ Echo      │───────│ A0  │
-    │ GND       │───────│ GND       │───────│ GND       │
-    └───────────┘       └───────────┘       └───────────┘
+    All 3 HC-SR04 Trig pins wired together → A2
 
-    Right HC-SR04
-    ┌───────────┐
-    │ VCC       │──► 5V
-    │ Trig      │──► A6 (⚠️ analog-only pin)
-    │ Echo      │──► A7 (⚠️ analog-only pin — use analogRead threshold)
-    │ GND       │──► GND
-    └───────────┘
+    Front HC-SR04       Left HC-SR04        Right HC-SR04
+    ┌───────────┐       ┌───────────┐       ┌───────────┐
+    │ VCC       │──► 5V │ VCC       │──► 5V │ VCC       │──► 5V
+    │ Trig      │──┐    │ Trig      │──┐    │ Trig      │──┐
+    │ Echo      │──► A3 │ Echo      │──► A0 │ Echo      │──► A1
+    │ GND       │──► GND│ GND       │──► GND│ GND       │──► GND
+    └───────────┘  │    └───────────┘  │    └───────────┘  │
+                   └───────┴───────────┴──► A2 (shared trigger)
+
+    ⚠️ Read sensors SEQUENTIALLY with 30ms delay between each.
 ```
 
 ---
@@ -222,7 +219,7 @@ No external resistor needed. The button is used to start/stop the robot.
 
 ## ⚠️ Important Notes
 
-1. **A6/A7 limitation**: Analog-only pins — right ultrasonic uses `analogRead()` threshold instead of `pulseIn()`
+1. **Shared ultrasonic trigger**: All 3 HC-SR04 trig pins wired to A2 — read sensors sequentially with 30ms delays
 2. **STBY must be HIGH** before motors will respond — set in `setup()`
 3. **Encoder interrupts** only work on D2 (INT0) and D3 (INT1) on Nano
 4. **Do NOT power servos/motors from Nano 5V** — use TB6612 VM from battery

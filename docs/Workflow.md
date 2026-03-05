@@ -24,23 +24,23 @@ Typical connection layout:
 **Motor Driver → Arduino**
 
 | Motor Driver | Arduino |
-| ------------ | ------- |
-| PWMA         | D5      |
-| AIN1         | D12     |
-| AIN2         | D11     |
-| PWMB         | D6      |
-| BIN1         | D10     |
-| BIN2         | D9      |
+| ------------ | ------- | ----------- |
+| PWMA         | D5      | Left speed  |
+| AIN1         | D12     | Left dir    |
+| AIN2         | D11     | Left dir    |
+| PWMB         | D6      | Right speed |
+| BIN1         | D10     | Right dir   |
+| BIN2         | D9      | Right dir   |
 | STBY         | D13     |
 
 **Encoders**
 
 | Encoder | Arduino |
 | ------- | ------- |
-| Left A  | D3      |
-| Left B  | D8      |
-| Right A | D2      |
-| Right B | D7      |
+| Left A  | D2      |
+| Left B  | D7      |
+| Right A | D3      |
+| Right B | D8      |
 
 **MPU6050**
 
@@ -53,11 +53,12 @@ Typical connection layout:
 
 **Ultrasonic Sensors**
 
-| Sensor | Arduino |
-| ------ | ------- |
-| Front  | A2/A3   |
-| Left   | A1/A0   |
-| Right  | A6/A7   |
+| Sensor | Trig        | Echo |
+| ------ | ----------- | ---- |
+| All 3  | A2 (shared) | —    |
+| Front  | —           | A3   |
+| Left   | —           | A0   |
+| Right  | —           | A1   |
 
 **Power Regulation (L7805CV)**
 

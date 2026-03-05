@@ -1,13 +1,13 @@
 // Test: Encoder tick counting
 // Stage 1 — Step 2.2
 
-#include "../src/config.h"
+#include "../../src/config.h"
 
 volatile long leftTicks = 0;
 volatile long rightTicks = 0;
 
 void leftISR() {
-  if (digitalRead(ENC_L_B) == HIGH) leftTicks++;
+  if (digitalRead(ENC_L_B) == LOW) leftTicks++;
   else leftTicks--;
 }
 

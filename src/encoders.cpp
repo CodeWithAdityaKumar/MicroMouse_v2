@@ -6,14 +6,14 @@ volatile long rightTicks = 0;
 
 void leftISR() {
   // Left motor forward = +ve ticks
-  if (digitalRead(ENC_L_B) == HIGH)
+  if (digitalRead(ENC_L_B) == LOW)
     leftTicks++;
   else
     leftTicks--;
 }
 
 void rightISR() {
-  // Right motor forward = -ve ticks
+  // Right motor forward = +ve ticks
   if (digitalRead(ENC_R_B) == HIGH)
     rightTicks++;
   else
@@ -26,7 +26,7 @@ void initEncoders() {
   pinMode(ENC_R_A, INPUT);
   pinMode(ENC_R_B, INPUT);
 
-  // Left encoder on D3 (INT1), Right encoder on D2 (INT0)
+  // Left encoder on D2 (INT0), Right encoder on D3 (INT1)
   attachInterrupt(digitalPinToInterrupt(ENC_L_A), leftISR, RISING);
   attachInterrupt(digitalPinToInterrupt(ENC_R_A), rightISR, RISING);
 }

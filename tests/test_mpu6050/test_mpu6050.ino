@@ -2,16 +2,17 @@
 // Stage 1 — Step 2.3
 
 #include <Wire.h>
-
-#define MPU_ADDR 0x68
+#include "../../src/config.h"
 
 float yawAngle = 0.0;
 float gyroBias = 0.0;
 unsigned long lastTime = 0;
 
+int16_t readRawGyro();
+
 void setup() {
   Serial.begin(115200);
-  Serial.println(F("MPU6050 Yaw Test"));
+  Serial.println(F("MPU6050 Yaw Test (X-axis)"));
 
   Wire.begin();
   Wire.beginTransmission(MPU_ADDR);
@@ -31,7 +32,7 @@ void setup() {
   // Calibrate — average 400 samples
   long sum = 0;
   for (int i = 0; i < 400; i++) {
-    sum += readRawGyroZ();
+    sum += readRawGyro();
     delay(5);
   }
   gyroBias = sum / 400.0;
@@ -42,12 +43,16 @@ void setup() {
   lastTime = micros();
 }
 
-int16_t readRawGyroZ() {
+int16_t readRawGyro() {
   Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x47); // GYRO_ZOUT_H
+  Wire.write(GYRO_REG); // Defined in config.h (0x43 for X-axis)
   Wire.endTransmission(false);
   Wire.requestFrom(MPU_ADDR, 2);
   int16_t val = Wire.read() << 8 | Wire.read();
+  
+  // Note: if left turn produces negative values, we can flip the sign here.
+  // The user said: "when the bot is turning to left the value is in +ve and right the value is in -ve"
+  // This is correct (left turn = +ve, right = -ve). We don't need to negate.
   return val;
 }
 
@@ -56,9 +61,9 @@ void loop() {
   float dt = (now - lastTime) / 1000000.0;
   lastTime = now;
 
-  int16_t raw = readRawGyroZ();
-  float gyroZ = (raw - gyroBias) / 131.0; // ±250°/s sensitivity
-  yawAngle += gyroZ * dt;
+  int16_t raw = readRawGyro();
+  float gyroRate = (raw - gyroBias) / GYRO_SENS; 
+  yawAngle += gyroRate * dt;
 
   // Wrap to ±180
   if (yawAngle > 180.0) yawAngle -= 360.0;

@@ -1,7 +1,7 @@
 // Test: Motor forward/backward
 // Stage 1 — Step 2.1
 
-#include "../src/config.h"
+#include "../../src/config.h"
 
 void setup() {
   Serial.begin(SERIAL_BAUD);
@@ -19,23 +19,24 @@ void setup() {
 }
 
 void loop() {
+  // PWMA/AIN = Left motor, PWMB/BIN = Right motor
   Serial.println(F("Left Forward"));
-  digitalWrite(BIN1, HIGH); digitalWrite(BIN2, LOW); analogWrite(PWMB, 100);
-  delay(2000);
-
-  Serial.println(F("Left Backward"));
-  digitalWrite(BIN1, LOW); digitalWrite(BIN2, HIGH); analogWrite(PWMB, 100);
-  delay(2000);
-
-  // Stop
-  analogWrite(PWMB, 0);
-
-  Serial.println(F("Right Forward"));
   digitalWrite(AIN1, HIGH); digitalWrite(AIN2, LOW); analogWrite(PWMA, 100);
   delay(2000);
 
-  Serial.println(F("Right Backward"));
+  Serial.println(F("Left Backward"));
   digitalWrite(AIN1, LOW); digitalWrite(AIN2, HIGH); analogWrite(PWMA, 100);
+  delay(2000);
+
+  // Stop
+  analogWrite(PWMA, 0);
+
+  Serial.println(F("Right Forward"));
+  digitalWrite(BIN1, HIGH); digitalWrite(BIN2, LOW); analogWrite(PWMB, 100);
+  delay(2000);
+
+  Serial.println(F("Right Backward"));
+  digitalWrite(BIN1, LOW); digitalWrite(BIN2, HIGH); analogWrite(PWMB, 100);
   delay(2000);
 
   // Stop all

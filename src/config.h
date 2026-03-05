@@ -2,28 +2,25 @@
 
 // ─── Pin Definitions ───────────────────────────
 // Motor Driver (TB6612FNG)
-#define PWMA     5    // Right motor PWM
-#define AIN1     12   // Right motor dir
-#define AIN2     11   // Right motor dir
-#define PWMB     6    // Left motor PWM
-#define BIN1     10   // Left motor dir
-#define BIN2     9    // Left motor dir
-#define STBY     13    // Standby (HIGH = active)
+#define PWMA     5    // Left motor PWM
+#define AIN1     12   // Left motor dir
+#define AIN2     11   // Left motor dir
+#define PWMB     6    // Right motor PWM
+#define BIN1     10   // Right motor dir
+#define BIN2     9    // Right motor dir
+#define STBY     13   // Standby (HIGH = active)
 
 // Encoders
-#define ENC_L_A  3    // Left encoder channel A (INT1)
-#define ENC_L_B  8    // Left encoder channel B
-#define ENC_R_A  2    // Right encoder channel A (INT0)
-#define ENC_R_B  7    // Right encoder channel B
-// Note: Right motor forward = -ve ticks, Left motor forward = +ve ticks
+#define ENC_L_A  2    // Left encoder channel A (INT0)
+#define ENC_L_B  7    // Left encoder channel B
+#define ENC_R_A  3    // Right encoder channel A (INT1)
+#define ENC_R_B  8    // Right encoder channel B
 
-// Ultrasonic Sensors
-#define US_FRONT_TRIG  A2
-#define US_FRONT_ECHO  A3
-#define US_LEFT_TRIG   A1
-#define US_LEFT_ECHO   A0
-#define US_RIGHT_TRIG  A6   // ⚠️ Analog-only pin
-#define US_RIGHT_ECHO  A7   // ⚠️ Analog-only pin
+// Ultrasonic Sensors (shared trigger — all 3 trigs wired to A2)
+#define US_TRIG        A2   // Shared trigger pin for all sensors
+#define US_FRONT_ECHO  A3   // Front echo
+#define US_LEFT_ECHO   A0   // Left echo
+#define US_RIGHT_ECHO  A1   // Right echo
 
 // Power Regulation
 // L7805CV linear voltage regulator: Battery → 5V (not connected to any pin)
@@ -31,6 +28,13 @@
 // Push Button (start/stop)
 #define BUTTON_PIN     4    // D4 — uses INPUT_PULLUP (press = LOW)
 #define DEBOUNCE_MS    50   // Debounce delay
+
+// ─── IMU (MPU6050) ─────────────────────────────
+#define MPU_ADDR       0x68
+#define GYRO_REG       0x43  // GYRO_XOUT_H (X-axis for yaw)
+#define GYRO_SENS      131.0 // ±250°/s sensitivity
+// MPU mounted on side — X-axis = yaw
+// Left turn = +ve angle, Right turn = -ve angle
 
 // ─── Robot Physical Constants ──────────────────
 #define WHEEL_DIAMETER_MM    34.0

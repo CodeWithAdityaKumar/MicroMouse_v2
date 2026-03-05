@@ -27,16 +27,17 @@
                    ┌────▼──────────▼───────────▼────┐
                    │         ARDUINO NANO            │
                    │                                 │
-                   │  D3,D8 ←── Left Encoder         │
-                   │  D2,D7 ←── Right Encoder        │
+                   │  D2,D7 ←── Left Encoder         │
+                   │  D3,D8 ←── Right Encoder        │
                    │  D5,D11,D12 ──→ Right Motor     │
                    │  D6,D9,D10  ──→ Left Motor      │
                    │  D13 ──→ STBY                    │
                    │  D4 ←── Push Button              │
                    │  A4,A5 ←→ MPU6050 (I²C)         │
-                   │  A1,A0 ←→ Left Ultrasonic       │
-                   │  A2,A3 ←→ Front Ultrasonic      │
-                   │  A6,A7 ←→ Right Ultrasonic      │
+                   │  A2 ──► Shared US Trigger       │
+                   │  A3 ←── Front US Echo           │
+                   │  A0 ←── Left US Echo            │
+                   │  A1 ←── Right US Echo           │
                    └────────────────────────────────┘
 ```
 
@@ -64,12 +65,12 @@
 
 | Function    | TB6612 Pin | Arduino Pin | Type           |
 | ----------- | ---------- | ----------- | -------------- |
-| Right PWM   | PWMA       | D5          | PWM Output     |
-| Right Dir 1 | AIN1       | D12         | Digital Output |
-| Right Dir 2 | AIN2       | D11         | Digital Output |
-| Left PWM    | PWMB       | D6          | PWM Output     |
-| Left Dir 1  | BIN1       | D10         | Digital Output |
-| Left Dir 2  | BIN2       | D9          | Digital Output |
+| Left PWM    | PWMA       | D5          | PWM Output     |
+| Left Dir 1  | AIN1       | D12         | Digital Output |
+| Left Dir 2  | AIN2       | D11         | Digital Output |
+| Right PWM   | PWMB       | D6          | PWM Output     |
+| Right Dir 1 | BIN1       | D10         | Digital Output |
+| Right Dir 2 | BIN2       | D9          | Digital Output |
 | Standby     | STBY       | D13         | Digital Output |
 
 #### Motor Control Truth Table
@@ -113,10 +114,10 @@ void brake();
 
 | Signal              | Arduino Pin | Interrupt | Notes                     |
 | ------------------- | ----------- | --------- | ------------------------- |
-| Left A (Channel A)  | D3          | INT1      | RISING edge ISR           |
-| Left B (Channel B)  | D8          | —         | Direction read inside ISR |
-| Right A (Channel A) | D2          | INT0      | RISING edge ISR           |
-| Right B (Channel B) | D7          | —         | Direction read inside ISR |
+| Left A (Channel A)  | D2          | INT0      | RISING edge ISR           |
+| Left B (Channel B)  | D7          | —         | Direction read inside ISR |
+| Right A (Channel A) | D3          | INT1      | RISING edge ISR           |
+| Right B (Channel B) | D8          | —         | Direction read inside ISR |
 
 #### Encoder Specifications
 
@@ -151,8 +152,8 @@ void rightEncoderISR() {
 }
 
 // In setup():
-attachInterrupt(digitalPinToInterrupt(3), leftEncoderISR, RISING);
-attachInterrupt(digitalPinToInterrupt(2), rightEncoderISR, RISING);
+attachInterrupt(digitalPinToInterrupt(2), leftEncoderISR, RISING);
+attachInterrupt(digitalPinToInterrupt(3), rightEncoderISR, RISING);
 ```
 
 #### Critical Notes
@@ -254,13 +255,13 @@ gyroBias = mean;
 
 #### Pin Assignment
 
-| Sensor | Trig Pin | Echo Pin | Orientation                |
-| ------ | -------- | -------- | -------------------------- |
-| Front  | A2       | A3       | 0° (forward)               |
-| Left   | A1       | A0       | 90° (perpendicular left)   |
-| Right  | A6       | A7       | -90° (perpendicular right) |
+| Sensor | Trig Pin         | Echo Pin | Orientation                |
+| ------ | ---------------- | -------- | -------------------------- |
+| Front  | A2 (shared trig) | A3       | 0° (forward)               |
+| Left   | A2 (shared trig) | A0       | 90° (perpendicular left)   |
+| Right  | A2 (shared trig) | A1       | -90° (perpendicular right) |
 
-> ⚠️ **Right sensor**: A6/A7 are analog-only on Nano — cannot use standard `pulseIn()`. Use `analogRead()` threshold detection for echo on A7.
+> All 3 sensor trig pins are wired together to A2. Sensors must be read **sequentially** with ~30ms delay between reads to avoid echo cross-talk.
 
 #### HC-SR04 Specifications
 
