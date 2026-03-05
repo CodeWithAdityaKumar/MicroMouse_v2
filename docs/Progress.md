@@ -20,13 +20,13 @@
 
 ## Stage 2 — Motion Control
 
-| #   | Test                | Status |
-| --- | ------------------- | :----: |
-| 1   | Move 1 cell (16 cm) |   ⬜   |
-| 2   | Straight-line PID   |   ⬜   |
-| 3   | Turn 90° left       |   ⬜   |
-| 4   | Turn 90° right      |   ⬜   |
-| 5   | Turn 180°           |   ⬜   |
+| #   | Test                | Status  |
+| --- | ------------------- | :-----: |
+| 1   | Move 1 cell (16 cm) | ✅ Done |
+| 2   | Straight-line PID   | ✅ Done |
+| 3   | Turn 90° left       | ✅ Done |
+| 4   | Turn 90° right      | ✅ Done |
+| 5   | Turn 180°           | ✅ Done |
 
 ---
 
