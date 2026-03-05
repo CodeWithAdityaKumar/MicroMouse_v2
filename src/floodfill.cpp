@@ -1,5 +1,5 @@
-#include "floodfill.h"
-#include "maze.h"
+#include "include/floodfill.h"
+#include "include/maze.h"
 
 #define QUEUE_SIZE 64
 

@@ -1,7 +1,7 @@
 // Test: Encoder tick counting
 // Stage 1 — Step 2.2
 
-#include "../../src/config.h"
+#include "../../src/include/config.h"
 
 volatile long leftTicks = 0;
 volatile long rightTicks = 0;

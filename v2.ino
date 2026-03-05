@@ -1,16 +1,16 @@
 // Micromouse v2 — Main Entry Point
 // See docs/PRD.md for full specification
 
-#include "src/config.h"
-#include "src/motors.h"
-#include "src/encoders.h"
-#include "src/imu.h"
-#include "src/sensors.h"
-#include "src/pid.h"
-#include "src/movement.h"
-#include "src/maze.h"
-#include "src/floodfill.h"
-#include "src/navigation.h"
+#include "src/include/config.h"
+#include "src/include/motors.h"
+#include "src/include/encoders.h"
+#include "src/include/imu.h"
+#include "src/include/sensors.h"
+#include "src/include/pid.h"
+#include "src/include/movement.h"
+#include "src/include/maze.h"
+#include "src/include/floodfill.h"
+#include "src/include/navigation.h"
 
 // ─── Robot State ───────────────────────────────
 BotState botState = STATE_IDLE;

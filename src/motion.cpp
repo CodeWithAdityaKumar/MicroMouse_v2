@@ -1,7 +1,7 @@
-#include "motion.h"
-#include "motors.h"
-#include "encoders.h"
-#include "imu.h"
+#include "include/motion.h"
+#include "include/motors.h"
+#include "include/encoders.h"
+#include "include/imu.h"
 #include <Arduino.h>
 
 void initMotion() {
@@ -50,18 +50,21 @@ void moveForward(float distance_cm) {
 }
 
 void turnRight90() {
-  resetYaw();
-  updateYawAngle();
-  
-  // The bot has physical inertia. Even with braking, it slides a bit.
-  // Set the target significantly before 90 to coast perfectly into 90.
-  float targetAngle = -60.0; 
+  resetEncoders();
+  long targetTicks = TICKS_PER_90DEG_R;
   
   // Start turning right (Left motor forward, Right motor backward)
   setMotors(BASE_SPEED, -BASE_SPEED);
   
-  while (getYawAngle() > targetAngle) {
-    updateYawAngle();
+  while (true) {
+    // Both motors contribute to rotation. Average their absolute moved distance
+    long currentL = abs(getLeftTicks());
+    long currentR = abs(getRightTicks());
+    long avgMoved = (currentL + currentR) / 2;
+    
+    if (avgMoved >= targetTicks) {
+      break;
+    }
     delay(5);
   }
   
@@ -70,17 +73,20 @@ void turnRight90() {
 }
 
 void turnLeft90() {
-  resetYaw();
-  updateYawAngle();
-  
-  // Account for physical inertia and overshoot
-  float targetAngle = 60.0; 
+  resetEncoders();
+  long targetTicks = TICKS_PER_90DEG_L;
   
   // Start turning left (Left motor backward, Right motor forward)
   setMotors(-BASE_SPEED, BASE_SPEED);
   
-  while (getYawAngle() < targetAngle) {
-    updateYawAngle();
+  while (true) {
+    long currentL = abs(getLeftTicks());
+    long currentR = abs(getRightTicks());
+    long avgMoved = (currentL + currentR) / 2;
+    
+    if (avgMoved >= targetTicks) {
+      break;
+    }
     delay(5);
   }
   
@@ -89,23 +95,21 @@ void turnLeft90() {
 }
 
 void turnBack() {
-  resetYaw();
-  updateYawAngle();
-  
-  // 180 degree turn right 
-  float targetAngle = -180.0; // Account for massive inertia on full turn
+  resetEncoders();
+  // 180 degrees is exactly two 90-degree turns
+  long targetTicks = TICKS_PER_90DEG_R * 2; 
   
   // Start turning right
   setMotors(BASE_SPEED, -BASE_SPEED);
   
-  while (getYawAngle() > targetAngle) {
-    updateYawAngle();
+  while (true) {
+    long currentL = abs(getLeftTicks());
+    long currentR = abs(getRightTicks());
+    long avgMoved = (currentL + currentR) / 2;
     
-    // If it crosses -180 to positive it's done (wrap around)
-    if (getYawAngle() > 0) {
-        break;
+    if (avgMoved >= targetTicks) {
+      break;
     }
-    
     delay(5);
   }
   

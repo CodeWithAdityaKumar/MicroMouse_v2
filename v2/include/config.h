@@ -11,11 +11,6 @@
 #define STBY     13   // Standby (HIGH = active)
 
 // Encoders
-// #define ENC_L_A  3    // Left encoder channel A (INT0)
-// #define ENC_L_B  8    // Left encoder channel B
-// #define ENC_R_A  2    // Right encoder channel A (INT1)
-// #define ENC_R_B  7    // Right encoder channel B
-
 #define ENC_L_A  2    // Left encoder channel A (INT0)
 #define ENC_L_B  7    // Left encoder channel B
 #define ENC_R_A  3    // Right encoder channel A (INT1)
@@ -48,6 +43,10 @@
 #define MM_PER_TICK          0.3009  // 106.81 / 355
 #define CELL_SIZE_MM         160
 #define TICKS_PER_CELL       532     // 160 / 0.3009
+
+// Tunable Turn Ticks (Adjust these based on physical testing!)
+#define TICKS_PER_90DEG_L    360/2     // Ticks for Left 90° turn
+#define TICKS_PER_90DEG_R    360/2     // Ticks for Right 90° turn
 
 // ─── Maze Constants ────────────────────────────
 #define MAZE_SIZE            8

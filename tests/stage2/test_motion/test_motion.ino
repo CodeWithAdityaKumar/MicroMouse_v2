@@ -1,11 +1,11 @@
 // Test: Stage 2 Motion Control
 // Tests moving 1 cell forward, turning exactly 90 degrees right, 90 left, and 180 degrees back.
 
-#include "../../src/config.h"
-#include "../../src/motors.h"
-#include "../../src/encoders.h"
-#include "../../src/imu.h"
-#include "../../src/motion.h"
+#include "../../src/include/config.h"
+#include "../../src/include/motors.h"
+#include "../../src/include/encoders.h"
+#include "../../src/include/imu.h"
+#include "../../src/include/motion.h"
 #include <Wire.h>
 
 void setup() {

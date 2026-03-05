@@ -1,7 +1,7 @@
 // Test: Ultrasonic distance reading (shared trigger)
 // Stage 1 — Step 2.4
 
-#include "../../src/config.h"
+#include "../../src/include/config.h"
 
 float readUltrasonic(int echoPin) {
   // Fire shared trigger

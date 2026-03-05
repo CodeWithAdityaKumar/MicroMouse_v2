@@ -1,6 +1,6 @@
-#include "navigation.h"
-#include "maze.h"
-#include "movement.h"
+#include "include/navigation.h"
+#include "include/maze.h"
+#include "include/movement.h"
 
 #define MAX_PATH 64
 

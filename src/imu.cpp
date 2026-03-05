@@ -1,5 +1,5 @@
-#include "imu.h"
-#include "config.h"
+#include "include/imu.h"
+#include "include/config.h"
 #include <Arduino.h>
 #include <Wire.h>
 

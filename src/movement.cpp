@@ -1,8 +1,8 @@
-#include "movement.h"
-#include "motors.h"
-#include "encoders.h"
-#include "pid.h"
-#include "imu.h"
+#include "include/movement.h"
+#include "include/motors.h"
+#include "include/encoders.h"
+#include "include/pid.h"
+#include "include/imu.h"
 
 void moveForward(int cells) {
   // TODO: Reset encoders, PID loop until ticks reached

@@ -44,6 +44,10 @@
 #define CELL_SIZE_MM         160
 #define TICKS_PER_CELL       532     // 160 / 0.3009
 
+// Tunable Turn Ticks (Adjust these based on physical testing!)
+#define TICKS_PER_90DEG_L    360/2     // Ticks for Left 90° turn
+#define TICKS_PER_90DEG_R    360/2     // Ticks for Right 90° turn
+
 // ─── Maze Constants ────────────────────────────
 #define MAZE_SIZE            8
 #define GOAL_X1 3

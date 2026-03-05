@@ -1,4 +1,4 @@
-#include "maze.h"
+#include "include/maze.h"
 #include <Arduino.h>
 
 Cell maze[MAZE_SIZE][MAZE_SIZE];

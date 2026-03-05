@@ -1,4 +1,4 @@
-#include "sensors.h"
+#include "include/sensors.h"
 #include <Arduino.h>
 
 void initSensors() {

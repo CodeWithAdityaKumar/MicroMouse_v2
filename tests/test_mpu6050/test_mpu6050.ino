@@ -2,7 +2,7 @@
 // Stage 1 — Step 2.3
 
 #include <Wire.h>
-#include "../../src/config.h"
+#include "../../src/include/config.h"
 
 float yawAngle = 0.0;
 float gyroBias = 0.0;
