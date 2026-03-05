@@ -69,10 +69,10 @@
 #define MIN_TURN_SPEED 40
 
 // ─── Sensor Thresholds ─────────────────────────
-#define WALL_DETECT_CM   10.0
+#define WALL_DETECT_CM   10.0   // If distance < 10cm, wall exists
 #define WALL_CLEAR_CM    14.0
-#define WALL_DANGER_CM   5.0
-#define WALL_CENTER_CM   7.5
+#define WALL_DANGER_CM   2.0    // Too close to crash
+#define WALL_CENTER_CM   3.5    // (16cm cell - 9cm bot) / 2 = 3.5cm ideal gap
 
 // ─── Timing ────────────────────────────────────
 #define LOOP_INTERVAL_US   5000   // 200 Hz

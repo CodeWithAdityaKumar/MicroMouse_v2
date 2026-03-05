@@ -2,10 +2,19 @@
 
 #include "config.h"
 
+// Expose state variables for debugging/dashboarding
+extern float distFront;
+extern float distLeft;
+extern float distRight;
+
+extern bool isWallFront;
+extern bool isWallLeft;
+extern bool isWallRight;
+
 void initSensors();
-float readFrontDistance();
-float readLeftDistance();
-float readRightDistance();
+
+// Call this function continuously in the loop to get fresh data
+void updateSensors();
 
 bool wallFront();
 bool wallLeft();

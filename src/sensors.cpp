@@ -1,28 +1,64 @@
 #include "include/sensors.h"
 #include <Arduino.h>
 
+// Global state variables
+float distFront = 999.0;
+float distLeft = 999.0;
+float distRight = 999.0;
+
+bool isWallFront = false;
+bool isWallLeft = false;
+bool isWallRight = false;
+
 void initSensors() {
-  // TODO: Set trig pins as OUTPUT, echo pins as INPUT
+  pinMode(US_TRIG, OUTPUT);
+  pinMode(US_FRONT_ECHO, INPUT);
+  pinMode(US_LEFT_ECHO, INPUT);
+  pinMode(US_RIGHT_ECHO, INPUT);
+  
+  digitalWrite(US_TRIG, LOW);
 }
 
-static float readUltrasonic(int trigPin, int echoPin) {
-  // TODO: 5-sample averaged ultrasonic reading
-  return 999.0;
+// Helper block to read a single ultrasonic via the shared trigger with a timeout
+static float readUltrasonic(int echoPin) {
+  // Clear trigger
+  digitalWrite(US_TRIG, LOW);
+  delayMicroseconds(2);
+  
+  // Send 10us pulse
+  digitalWrite(US_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(US_TRIG, LOW);
+  
+  // Timeout set to 30000us (30ms) to ensure echo is captured reliably
+  long duration = pulseIn(echoPin, HIGH, 30000);
+  
+  if (duration == 0) {
+    return 999.0; // Out of range or no echo received
+  }
+  
+  // Calculate distance in cm
+  // Speed of sound = 340 m/s = 0.034 cm/us (duration * 0.0343 / 2.0 = duration * 0.01715)
+  return duration * 0.01715;
 }
 
-float readFrontDistance() {
-  return readUltrasonic(US_FRONT_TRIG, US_FRONT_ECHO);
+void updateSensors() {
+  // Read each sensor sequentially with a solid 30ms delay to prevent echoing overlap
+  distFront = readUltrasonic(US_FRONT_ECHO);
+  delay(30);
+  
+  distLeft = readUltrasonic(US_LEFT_ECHO);
+  delay(30);
+  
+  distRight = readUltrasonic(US_RIGHT_ECHO);
+  delay(30);
+  
+  // Update boolean flags based on config threshold
+  isWallFront = (distFront < WALL_DETECT_CM);
+  isWallLeft  = (distLeft  < WALL_DETECT_CM);
+  isWallRight = (distRight < WALL_DETECT_CM);
 }
 
-float readLeftDistance() {
-  return readUltrasonic(US_LEFT_TRIG, US_LEFT_ECHO);
-}
-
-float readRightDistance() {
-  // TODO: Assign right sensor pins first
-  return 999.0;
-}
-
-bool wallFront() { return readFrontDistance() < WALL_DETECT_CM; }
-bool wallLeft()  { return readLeftDistance()  < WALL_DETECT_CM; }
-bool wallRight() { return readRightDistance() < WALL_DETECT_CM; }
+bool wallFront() { return isWallFront; }
+bool wallLeft()  { return isWallLeft; }
+bool wallRight() { return isWallRight; }
