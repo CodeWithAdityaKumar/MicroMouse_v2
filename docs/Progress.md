@@ -32,31 +32,31 @@
 
 ## Stage 3 — Wall Detection
 
-| #   | Test                       | Status |
-| --- | -------------------------- | :----: |
-| 1   | Front wall detect          |   ⬜   |
-| 2   | Side wall detect           |   ⬜   |
-| 3   | All sensors simultaneously |   ⬜   |
+| #   | Test                       | Status  |
+| --- | -------------------------- | :-----: |
+| 1   | Front wall detect          | ✅ Done |
+| 2   | Side wall detect           | ✅ Done |
+| 3   | All sensors simultaneously | ✅ Done |
 
 ---
 
 ## Stage 4 — Maze Representation
 
-| #   | Test                      | Status |
-| --- | ------------------------- | :----: |
-| 1   | Initialize maze grid      |   ⬜   |
-| 2   | Update walls from sensors |   ⬜   |
-| 3   | Print maze over Serial    |   ⬜   |
+| #   | Test                      | Status  |
+| --- | ------------------------- | :-----: |
+| 1   | Initialize maze grid      | ✅ Done |
+| 2   | Update walls from sensors | ✅ Done |
+| 3   | Print maze over Serial    | ✅ Done |
 
 ---
 
 ## Stage 5 — Flood Fill
 
-| #   | Test                            | Status |
-| --- | ------------------------------- | :----: |
-| 1   | Flood fill on empty maze        |   ⬜   |
-| 2   | Flood fill with walls           |   ⬜   |
-| 3   | Decision picks correct neighbor |   ⬜   |
+| #   | Test                            | Status  |
+| --- | ------------------------------- | :-----: |
+| 1   | Flood fill on empty maze        | ✅ Done |
+| 2   | Flood fill with walls           | ✅ Done |
+| 3   | Decision picks correct neighbor | ✅ Done |
 
 ---
 
