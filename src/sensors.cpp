@@ -43,15 +43,16 @@ static float readUltrasonic(int echoPin) {
 }
 
 void updateSensors() {
-  // Read each sensor sequentially with a solid 30ms delay to prevent echoing overlap
+  // Read each sensor sequentially with a tiny 2ms delay to prevent echoing overlap
+  // This allows the PID loop to run fast (~80-100Hz) when walls are close.
   distFront = readUltrasonic(US_FRONT_ECHO);
-  delay(30);
+  delay(2);
   
   distLeft = readUltrasonic(US_LEFT_ECHO);
-  delay(30);
+  delay(2);
   
   distRight = readUltrasonic(US_RIGHT_ECHO);
-  delay(30);
+  delay(2);
   
   // Update boolean flags based on config threshold
   isWallFront = (distFront < WALL_DETECT_CM);

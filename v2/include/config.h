@@ -63,7 +63,7 @@
 #define TURN_KP        4.0
 #define WALL_KP        0.5
 #define MAX_INTEGRAL   1000.0
-#define BASE_SPEED     150
+#define BASE_SPEED     80
 #define SPEED_RUN_SPEED 150
 #define MAX_TURN_SPEED 150
 #define MIN_TURN_SPEED 40
