@@ -10,7 +10,7 @@ extern uint8_t  botY;
 extern Direction botDir;
 
 // ── Lifecycle ────────────────────────────────────────────────────────────────
-void initNavigation();
+void initNavigation(uint8_t startX = 0, uint8_t startY = 0, Direction startHeading = NORTH);
 
 // ── Exploration ──────────────────────────────────────────────────────────────
 // Execute exactly one explore step:

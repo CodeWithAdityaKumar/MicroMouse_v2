@@ -72,8 +72,8 @@ This document outlines the testing procedures for each stage, detailing how to r
 
   **Test 1 — Empty Maze:**
   1. The ASCII grid prints with `0` inside all 4 goal cells `(3,3)`, `(3,4)`, `(4,3)`, `(4,4)`.
-  2. All 4 corners `(0,0)`, `(7,0)`, `(0,7)`, `(7,7)` show distance `7`.
-  3. Serial Monitor prints: `maze[3][3].distance == 0: PASS`, `maze[0][0].distance == 7: PASS`, etc.
+  2. All 4 corners `(0,0)`, `(7,0)`, `(0,7)`, `(7,7)` show distance `6`.
+  3. Serial Monitor prints: `maze[3][3].distance == 0: PASS`, `maze[0][0].distance == 6: PASS`, etc.
 
   **Test 2 — Walled Maze:**
   1. After adding a vertical wall between columns 3 and 4 in the center rows, the flood fill re-runs.
@@ -84,4 +84,26 @@ This document outlines the testing procedures for each stage, detailing how to r
   1. From corner `(0,0)` facing NORTH, the function must return `NORTH` or `EAST` (both are equal distance from center on an empty maze).
   2. Serial Monitor prints: `=> PASS`
 
-- **Fail:** Any PASS/FAIL check prints `FAIL`. Or distances at goal cells are not `0`, or corners are not `7`.
+- **Fail:** Any PASS/FAIL check prints `FAIL`. Or distances at goal cells are not `0`, or corners are not `6`.
+
+---
+
+## Stage 6: Exploration Mode
+
+### Physical Maze Navigation
+
+- **Test File:** `tests/stage6/test_explore/test_explore.ino`
+- **Procedure:**
+  1. Open `test_explore.ino` and locate the `initNavigation(...)` command in the `TST_CALIBRATING` state (around line 79).
+  2. For a **Left-side start**: Change it to `initNavigation(0, 0, NORTH);`
+  3. For a **Right-side start**: Change it to `initNavigation(7, 0, NORTH);`
+  4. Place the robot at the corresponding physical corner facing **NORTH**.
+  5. Upload and open Serial Monitor at 115200 baud. Click once to calibrate IMU, click again to start. The robot will drive autonomously.
+- **Pass Criteria:**
+  1. After each cell the Serial Monitor shows the current position and direction, e.g. `Pos: (2,3) Dir: N`.
+  2. Each step also prints real-time sensor readings and wall votes, e.g. `Sensors: F=3.2 L=999.0 R=3.6  Walls: F=1 L=0 R=1` — verify `L=0` at intersections with a real opening to the left.
+  3. Robot eventually prints `*** GOAL REACHED! ***` and stops inside one of the 4 center cells `(3,3)`, `(3,4)`, `(4,3)`, or `(4,4)`.
+  4. Final maze printed via Serial shows all explored walls correctly.
+- **Fail:** Robot drives into a wall or misses an open turn.
+  - **Debug:** Check the `Sensors: L=X.X` line. If `L` shows 7-10cm at an intersection, lower `MAZE_WALL_CM` in `config.h`.
+  - **Tuning:** Hold the button to reset and adjust `WALL_KP` / `STRAIGHT_KP` if the straight movement is drifting.

@@ -22,10 +22,10 @@ static const int8_t dy[4] = { +1,  0, -1,  0 };
 // ─────────────────────────────────────────────────────────────────────────────
 // initNavigation: reset bot state, maze, and compute first flood fill
 // ─────────────────────────────────────────────────────────────────────────────
-void initNavigation() {
-  botX  = 0;
-  botY  = 0;
-  botDir = NORTH;
+void initNavigation(uint8_t startX, uint8_t startY, Direction startHeading) {
+  botX  = startX;
+  botY  = startY;
+  botDir = startHeading;
 
   initMaze();
   floodFill();
@@ -51,13 +51,43 @@ void turnToFace(Direction target, Direction current) {
 //   Returns true when the goal has been reached
 // ─────────────────────────────────────────────────────────────────────────────
 bool exploreStep() {
-  // 1. Read all 3 ultrasonic sensors
-  updateSensors();
+  // 1. Wait for robot to fully settle after previous turn/move before reading sensors
+  delay(150);
 
-  // 2. Record walls detected from current cell/heading
-  updateWalls(botX, botY, botDir, wallFront(), wallLeft(), wallRight());
+  // 2. Take 3 samples per sensor and use majority vote to reject noise.
+  //    A single bad echo from cross-talk can't record a false wall this way.
+  int frontCount = 0, leftCount = 0, rightCount = 0;
+  for (int i = 0; i < 3; i++) {
+    updateSensors();
+    // Use MAZE_WALL_CM (7cm), NOT WALL_DETECT_CM (10cm).
+    // At an intersection, far corridor walls read ~8-9cm — above 7cm so they
+    // won't be counted as walls. Actual adjacent walls are ~3.5cm.
+    if (distFront < MAZE_WALL_CM) frontCount++;
+    if (distLeft  < MAZE_WALL_CM) leftCount++;
+    if (distRight < MAZE_WALL_CM) rightCount++;
+  }
+  bool wFront = (frontCount >= 2);
+  bool wLeft  = (leftCount  >= 2);
+  bool wRight = (rightCount >= 2);
 
-  // 3. Mark cell as visited
+  // Log to Serial so user can verify sensor readings during debugging
+  Serial.print(F("  Sensors: F="));
+  Serial.print(distFront, 1);
+  Serial.print(F(" L="));
+  Serial.print(distLeft, 1);
+  Serial.print(F(" R="));
+  Serial.print(distRight, 1);
+  Serial.print(F("  Walls: F="));
+  Serial.print(wFront ? '1' : '0');
+  Serial.print(F(" L="));
+  Serial.print(wLeft  ? '1' : '0');
+  Serial.print(F(" R="));
+  Serial.println(wRight ? '1' : '0');
+
+  // 3. Record walls detected from current cell/heading (using voted readings)
+  updateWalls(botX, botY, botDir, wFront, wLeft, wRight);
+
+  // 4. Mark cell as visited
   maze[botX][botY].visited = true;
 
   // 4. Check if we have reached the goal

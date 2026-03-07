@@ -2,7 +2,7 @@
 #include "include/maze.h"
 #include <Arduino.h>
 
-#define QUEUE_SIZE 64
+#define QUEUE_SIZE 128
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Neighbor offsets and wall masks for N, E, S, W

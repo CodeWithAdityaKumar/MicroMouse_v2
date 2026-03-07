@@ -76,7 +76,11 @@ void loop() {
     case TST_CALIBRATING:
       Serial.println(F("Calibrating IMU — keep bot STILL..."));
       initIMU();
-      initNavigation(); // also inits maze + flood fill
+      
+      // Initialize at (7,0) facing NORTH for right-side start.
+      // Modify to (0,0, NORTH) if starting from the left side later.
+      initNavigation(7, 0, NORTH);
+      
       Serial.println(F("Ready! Click button to START EXPLORATION."));
       state = TST_READY;
       break;

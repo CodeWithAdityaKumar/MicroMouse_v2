@@ -318,41 +318,97 @@ if(front < left and front < right)
 
 Now robot **explores unknown maze**.
 
-Loop:
+Each step in `exploreStep()`:
 
 ```
-read walls
-update maze
-run floodfill
-choose direction
-move
+1. Settle 150ms (let vibration stop)
+2. Read 3 samples per sensor, majority vote (2/3)
+3. updateWalls(x, y, heading, wFront, wLeft, wRight)
+4. maze[x][y].visited = true
+5. if isGoal(x, y): STOP
+6. floodFill()  ← recalculate all 64 distances with new walls
+7. nextDir = getBestDirection(x, y, heading)
+8. turnToFace(nextDir, heading)
+9. moveForward(CELL_SIZE_MM / 10.0)
+10. x, y = x + dx[nextDir], y + dy[nextDir]
+```
+
+Turning logic in `turnToFace(target, current)`:
+
+```
+diff = (target - current + 4) % 4
+0 → no turn
+1 → turnRight90()
+2 → turnBack()
+3 → turnLeft90()
+```
+
+Key Bugs to Avoid:
+
+```
+- WALL_DETECT_CM too large:  use MAZE_WALL_CM = 7.0 for recording
+- BFS queue too small:        use QUEUE_SIZE = 128
+- Sensor cross-talk:          use 15ms delay between pings
 ```
 
 Repeat until:
 
 ```
-goal reached
+isGoal(x, y) == true
 ```
 
 ---
 
 # Stage 7 — Speed Run Mode
 
-After exploration complete.
+After exploration the maze map is fully known.
 
 Robot now knows shortest path.
 
-Compute path:
+### Step 11: Trace Optimal Path
+
+From the FULLY EXPLORED maze, trace backwards from start `(0,0)` to goal:
 
 ```
-start → goal
+path = []
+current = (0, 0)
+while not isGoal(current):
+  next = getBestDirection(current, heading)
+  path.append(next)
+  current = move(current, next)
 ```
 
-Store path:
+Encode each move as a character:
+
+```
+'F' = keep going straight (no turn)
+'R' = turn right then forward
+'L' = turn left then forward
+'B' = turn back (180) then forward
+```
+
+So the path array looks like:
 
 ```
 FFLFRFF
 ```
+
+Store in `speedRunPath[MAX_PATH]` as char array.
+
+### Step 12: Speed Run Replay
+
+Now replay the stored path at `SPEED_RUN_SPEED`:
+
+```
+for each command in speedRunPath:
+  if 'F': moveForwardFast(1 cell)
+  if 'R': turnRight90(); moveForwardFast(1 cell)
+  if 'L': turnLeft90();  moveForwardFast(1 cell)
+  if 'B': turnBack();    moveForwardFast(1 cell)
+```
+
+Key: `SPEED_RUN_SPEED` should be higher than `BASE_SPEED`.
+Start with `BASE_SPEED + 30`, then tune up.
 
 Now run **fast run**.
 
