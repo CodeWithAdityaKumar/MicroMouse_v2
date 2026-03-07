@@ -47,7 +47,7 @@ void moveForward(float distance_cm) {
     
     // --- Emergency Front Wall Stop ---
     // If we're closer than WALL_DANGER_CM + 1.0 buffer (3cm total), stop moving forward!
-    if (distFront > 0 && distFront <= (WALL_DANGER_CM + 1.0)) {
+    if (distFront > 0 && distFront <= (WALL_DANGER_CM)) {
       break;
     }
     

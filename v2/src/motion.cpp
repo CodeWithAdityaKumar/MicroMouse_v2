@@ -49,9 +49,9 @@ void moveForward(float distance_cm) {
     
     // --- Emergency Front Wall Stop ---
     // If we're closer than WALL_DANGER_CM + 1.0 buffer (3cm total), stop moving forward!
-    // if (distFront > 0 && distFront <= (WALL_DANGER_CM + 1.0)) {
-    //   break;
-    // }
+    if (distFront > 0 && distFront <= (WALL_DANGER_CM)) {
+      break;
+    }
     
     // --- 1. Encoder Error ---
     // (If Left > Right, error is positive -> Left slows down, Right speeds up)
