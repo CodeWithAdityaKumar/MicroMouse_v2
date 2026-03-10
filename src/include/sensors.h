@@ -13,8 +13,11 @@ extern bool isWallRight;
 
 void initSensors();
 
-// Call this function continuously in the loop to get fresh data
+// Call this function continuously in the loop to get fresh data (Non-blocking)
 void updateSensors();
+
+// Call this when the robot is fully stopped to get a guaranteed full sweep (Blocking)
+void readAllSensorsBlocking();
 
 bool wallFront();
 bool wallLeft();

@@ -112,7 +112,6 @@ void loop() {
         Serial.print(botY); Serial.println(F(")"));
         Serial.println(F("Hold button to reset and run again."));
         
-        // Print final maze state
         printMaze();
         
         state = TST_DONE;

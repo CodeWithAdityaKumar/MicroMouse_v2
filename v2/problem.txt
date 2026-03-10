@@ -4,3 +4,23 @@
 
 
 3. ab ye right wala issue solve ho gaya hai but ab ye pura explore nhi ker raha, pehle left wale code me pura explore kerke center me chala jaata tha but ab wo v nahi jaa jaa raha hai. isse fix ker aur isse working kero
+
+
+
+
+
+pass------------------------------------------------
+motor rotation is correct
+button
+ultrasonic
+mpu
+
+
+fail------------------------------------------------------
+left encoder
+
+
+
+
+
+

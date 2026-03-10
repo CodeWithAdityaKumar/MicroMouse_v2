@@ -62,6 +62,7 @@
 #define STRAIGHT_KD    1.0
 #define TURN_KP        4.0
 #define WALL_KP        0.5
+#define WALL_KD        0.1
 #define MAX_INTEGRAL   1000.0
 #define BASE_SPEED     150
 #define SPEED_RUN_SPEED 150
@@ -74,7 +75,7 @@
                                 // Actual adjacent wall is ~3.5cm. Far perpendicular
                                 // corridor walls read ~8-9cm - must NOT be flagged.
 #define WALL_CLEAR_CM    14.0
-#define WALL_DANGER_CM   2.0    // Too close to crash
+#define WALL_DANGER_CM   4.5    // Increased from 2.0 to account for braking inertia
 #define WALL_CENTER_CM   3.5    // (16cm cell - 9cm bot) / 2 = 3.5cm ideal gap
 
 // ─── Timing ────────────────────────────────────

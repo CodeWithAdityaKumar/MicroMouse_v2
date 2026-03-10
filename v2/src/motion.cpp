@@ -5,8 +5,6 @@
 #include "sensors.h"
 #include <Arduino.h>
 
-
-
 void initMotion() {
   initMotors();
   initEncoders();
@@ -14,7 +12,7 @@ void initMotion() {
   // because calibration requires the bot to be still.
 }
 
-void moveForward(float distance_cm) {
+void moveForward(float distance_cm, bool hasLeftWall, bool hasRightWall) {
   // 1 cell = 16 cm ≈ 532 ticks
   long targetTicks = (distance_cm * 10.0) / MM_PER_TICK;
   
@@ -26,7 +24,11 @@ void moveForward(float distance_cm) {
   // Capture our target heading before we start moving
   updateYawAngle();
   float baseYaw = getYawAngle();
-  long lastSensorUpdate = millis();
+  
+  // For derivative calculation in wall PID
+  float lastLeftError = 0;
+  float lastRightError = 0;
+  unsigned long lastTime = millis();
   
   while (true) {
     long currentL = getLeftTicks() - startL;
@@ -36,145 +38,152 @@ void moveForward(float distance_cm) {
     // Always poll IMU to maintain accuracy
     updateYawAngle();
     
-    // Poll ultrasonic sensors every 50ms so we don't stall the motor loop 
-    // (reading all 3 takes up to 90ms total if out of range)
-    if (millis() - lastSensorUpdate >= 50) {
-      updateSensors();
-      lastSensorUpdate = millis();
-    }
+    // Poll ALL sensors non-stop now that sensors.cpp handles the 15ms non-blocking Round-Robin limit
+    updateSensors();
     
     if (avgTicks >= targetTicks) {
       break;
     }
     
     // --- Emergency Front Wall Stop ---
-    // If we're closer than WALL_DANGER_CM + 1.0 buffer (3cm total), stop moving forward!
-    if (distFront > 0 && distFront <= (WALL_DANGER_CM)) {
+    // If we're closer than WALL_DANGER_CM, brake!
+    if (distFront > 0 && distFront <= WALL_DANGER_CM) {
       break;
     }
     
-    // --- 1. Encoder Error ---
-    // (If Left > Right, error is positive -> Left slows down, Right speeds up)
-    long encError = currentL - currentR;
-    
-    // --- 2. IMU Heading Error ---
+    // --- 1. IMU Heading Error ---
     // (If yaw is positive/left of target, error is positive -> Steer right)
     float yawError = baseYaw - getYawAngle();
     
-    // --- 3. Wall Centering Error ---
-    float wallError = 0;
-    int wallsSeen = 0;
+    // --- 2. Wall Centering Error (Proportional-Derivative) ---
+    float leftWallError = 0;
+    float rightWallError = 0;
     
-    if (distLeft < WALL_DETECT_CM && distLeft > 0) {
-      // If we are getting too close to the left wall (e.g. 2.0cm), we need to steer RIGHT.
-      // Steer right = Left motor speeds up, Right motor slows down.
-      // In our code: speedL = BASE_SPEED - correction. 
-      // Therefore, to speed up Left we need a NEGATIVE correction.
-      // 2.0 - 3.5 = -1.5 (Negative!) -> This gives negative correction!
-      wallError += (distLeft - WALL_CENTER_CM);
-      wallsSeen++;
-    }
-    if (distRight < WALL_DETECT_CM && distRight > 0) {
-      // If we are getting too close to the right wall (e.g. 2.0cm), we need to steer LEFT.
-      // Steer left = Right motor speeds up, Left motor slows down.
-      // In our code: speedL = BASE_SPEED - correction. 
-      // Therefore, to slow down Left we need a POSITIVE correction.
-      // 3.5 - 2.0 = +1.5 (Positive!) -> This gives positive correction!
-      wallError += (WALL_CENTER_CM - distRight);
-      wallsSeen++;
-    }
-    if (wallsSeen > 0) {
-      wallError /= wallsSeen;
+    unsigned long now = millis();
+    float dt = (now - lastTime) / 1000.0f; // in seconds
+    if (dt <= 0) dt = 0.001;
+    
+    // Only apply wall centering if a wall is actually supposed to exist there
+    if (hasLeftWall && distLeft > 0 && distLeft < WALL_CLEAR_CM) {
+        float error = WALL_CENTER_CM - distLeft; // Target 3.5cm 
+        if (abs(error) > 0.5) { // Deadband of 0.5cm to prevent micro-oscillations
+          float derivative = (error - lastLeftError) / dt;
+          leftWallError = error + (WALL_KD / WALL_KP) * derivative;
+          lastLeftError = error;
+        }
     }
     
-    // --- Combine Errors into Total Correction ---
-    // **CRITICAL FIX**: We removed `encError` (LeftTicks - RightTicks) from this 
-    // calculation because forcing the wheels to cover the exact same distance mathematically 
-    // prevents the robot from steering left/right to avoid walls! 
-    // The IMU (yawError) is powerful enough to keep the heading straight.
-    int correction = (yawError * STRAIGHT_KP * 3.0) 
-                   + (wallError * WALL_KP * 45.0);
+    if (hasRightWall && distRight > 0 && distRight < WALL_CLEAR_CM) {
+        float error = WALL_CENTER_CM - distRight;
+        if (abs(error) > 0.5) {
+          float derivative = (error - lastRightError) / dt;
+          // Note: Error is subtracted, so steering pulls towards right wall
+          rightWallError = error + (WALL_KD / WALL_KP) * derivative;
+          lastRightError = error;
+        }
+    }
     
-    // Compute motor speeds 
-    int speedL = BASE_SPEED - correction;
-    int speedR = BASE_SPEED + correction;
+    lastTime = now;
     
-    // Constrain to reasonable limits so we don't stall or go crazy
-    speedL = constrain(speedL, BASE_SPEED - 50, BASE_SPEED + 50);
-    speedR = constrain(speedR, BASE_SPEED - 50, BASE_SPEED + 50);
+    // Calculate total correction
+    // Negative error = veer left to fix
+    // Positive error = veer right to fix
+    float totalCorrection = (yawError * STRAIGHT_KP) 
+                            - (leftWallError * WALL_KP) 
+                            + (rightWallError * WALL_KP);
+                            
+    // Cap outer correction boundary to prevent flipping out
+    if (totalCorrection > 20) totalCorrection = 20;
+    if (totalCorrection < -20) totalCorrection = -20;
     
-    setMotors(speedL, speedR);
-    delay(5); // Small delay to allow encoder interrupts to fire and avoid tight looping
+    int leftPWM = BASE_SPEED + totalCorrection;
+    int rightPWM = BASE_SPEED - totalCorrection;
+    
+    setMotors(leftPWM, rightPWM);
   }
   
   brake();
-  delay(100);
+  delay(10); // let momentum settle slightly before moving on
 }
 
 void turnRight90() {
-  resetEncoders();
-  long targetTicks = TICKS_PER_90DEG_R;
-  
-  // Start turning right (Left motor forward, Right motor backward)
-  setMotors(BASE_SPEED, -BASE_SPEED);
+  updateYawAngle();
+  float targetYaw = getYawAngle() - 90.0;
   
   while (true) {
-    // Both motors contribute to rotation. Average their absolute moved distance
-    long currentL = abs(getLeftTicks());
-    long currentR = abs(getRightTicks());
-    long avgMoved = (currentL + currentR) / 2;
+    updateYawAngle();
+    float currentYaw = getYawAngle();
+    float error = currentYaw - targetYaw;
     
-    if (avgMoved >= targetTicks) {
+    // Optional: normalize error to [-180, 180]
+    while (error > 180.0) error -= 360.0;
+    while (error < -180.0) error += 360.0;
+    
+    // If we're within 1.0 degree of target, done
+    if (abs(error) < 1.0) {
       break;
     }
-    delay(5);
+    
+    // P-control for turn speed (with a minimum floor to overcome friction)
+    int turnSpeed = abs(error) * TURN_KP;
+    if (turnSpeed < MIN_TURN_SPEED) turnSpeed = MIN_TURN_SPEED;
+    if (turnSpeed > MAX_TURN_SPEED) turnSpeed = MAX_TURN_SPEED;
+    
+    // Turning right: left motor forward, right motor backward
+    setMotors(turnSpeed, -turnSpeed);
   }
-  
   brake();
-  delay(100);
 }
 
 void turnLeft90() {
-  resetEncoders();
-  long targetTicks = TICKS_PER_90DEG_L;
-  
-  // Start turning left (Left motor backward, Right motor forward)
-  setMotors(-BASE_SPEED, BASE_SPEED);
+  updateYawAngle();
+  float targetYaw = getYawAngle() + 90.0;
   
   while (true) {
-    long currentL = abs(getLeftTicks());
-    long currentR = abs(getRightTicks());
-    long avgMoved = (currentL + currentR) / 2;
+    updateYawAngle();
+    float currentYaw = getYawAngle();
+    float error = targetYaw - currentYaw;
     
-    if (avgMoved >= targetTicks) {
+    while (error > 180.0) error -= 360.0;
+    while (error < -180.0) error += 360.0;
+    
+    if (abs(error) < 1.0) {
       break;
     }
-    delay(5);
+    
+    int turnSpeed = abs(error) * TURN_KP;
+    if (turnSpeed < MIN_TURN_SPEED) turnSpeed = MIN_TURN_SPEED;
+    if (turnSpeed > MAX_TURN_SPEED) turnSpeed = MAX_TURN_SPEED;
+    
+    // Turning left: left motor backward, right motor forward
+    setMotors(-turnSpeed, turnSpeed);
   }
-  
   brake();
-  delay(100);
 }
 
 void turnBack() {
-  resetEncoders();
-  // Uses its own dedicated tuning constant
-  long targetTicks = TICKS_PER_180DEG; 
-  
-  // Start turning right
-  setMotors(BASE_SPEED, -BASE_SPEED);
+  updateYawAngle();
+  // 180 degree left turn
+  float targetYaw = getYawAngle() + 180.0;
   
   while (true) {
-    long currentL = abs(getLeftTicks());
-    long currentR = abs(getRightTicks());
-    long avgMoved = (currentL + currentR) / 2;
+    updateYawAngle();
+    float currentYaw = getYawAngle();
+    float error = targetYaw - currentYaw;
     
-    if (avgMoved >= targetTicks) {
+    while (error > 180.0) error -= 360.0;
+    while (error < -180.0) error += 360.0;
+    
+    if (abs(error) < 1.0) {
       break;
     }
-    delay(5);
+    
+    int turnSpeed = abs(error) * TURN_KP;
+    if (turnSpeed < MIN_TURN_SPEED) turnSpeed = MIN_TURN_SPEED;
+    if (turnSpeed > MAX_TURN_SPEED) turnSpeed = MAX_TURN_SPEED;
+    
+    // Turning left around: left motor backward, right motor forward
+    setMotors(-turnSpeed, turnSpeed);
   }
-  
   brake();
-  delay(100);
 }

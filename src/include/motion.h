@@ -6,7 +6,7 @@
 void initMotion();
 
 // High level movement functions
-void moveForward(float distance_cm);
+void moveForward(float distance_cm, bool hasLeftWall = false, bool hasRightWall = false);
 void turnRight90();
 void turnLeft90();
 void turnBack();

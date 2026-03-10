@@ -107,3 +107,26 @@ This document outlines the testing procedures for each stage, detailing how to r
 - **Fail:** Robot drives into a wall or misses an open turn.
   - **Debug:** Check the `Sensors: L=X.X` line. If `L` shows 7-10cm at an intersection, lower `MAZE_WALL_CM` in `config.h`.
   - **Tuning:** Hold the button to reset and adjust `WALL_KP` / `STRAIGHT_KP` if the straight movement is drifting.
+
+---
+
+## Stage 7: Speed Run Mode (End-to-End Test)
+
+### Explore -> Solved -> High Speed Run
+
+- **Test File:** `tests/stage7/test_exlore_and_speedrun/test_exlore_and_speedrun.ino`
+- **Procedure:**
+  1. Upload the sketch and open Serial Monitor at 115200.
+  2. Place the robot at the starting corner `(0,0)` facing **NORTH**.
+  3. Click the button to calibrate and start the Exploration phase. The robot will use floodfill to map the maze until it hits the center.
+  4. Wait for it to stop and print `*** GOAL REACHED! ***`.
+  5. The robot will automatically print the optimized shortest path `F/L/R` trace sequence.
+  6. **Pick up the robot**, returning it to `(0,0)` facing **NORTH**.
+  7. Click the button once more. The robot will instantly recalibrate its IMU and execute the straight-line compressed Speed Run to the center.
+- **Pass Criteria:**
+  1. Successfully completely explores and halts upon reaching the inner 2x2.
+  2. During the Speed Run, successfully combines consecutive straight blocks into long uninterrupted jumps (e.g. accelerating through `48cm` without hesitating).
+  3. Reaches the exact center and stops.
+- **Fail:** 
+  1. Crashes during exploration.
+  2. The speed run path drives it directly into a wall that was previously undetected during exploration.

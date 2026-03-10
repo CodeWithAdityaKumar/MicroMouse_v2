@@ -42,22 +42,45 @@ static float readUltrasonic(int echoPin) {
   return duration * 0.01715;
 }
 
-void updateSensors() {
-  // 15ms between pings to prevent echo cross-talk between adjacent sensors.
-  // With 3 sensors this takes ~135ms total — acceptable in the explore loop.
+void readAllSensorsBlocking() {
   distFront = readUltrasonic(US_FRONT_ECHO);
   delay(15);
-  
   distLeft = readUltrasonic(US_LEFT_ECHO);
   delay(15);
-  
   distRight = readUltrasonic(US_RIGHT_ECHO);
   delay(15);
   
-  // Update boolean flags based on config threshold
   isWallFront = (distFront < WALL_DETECT_CM);
   isWallLeft  = (distLeft  < WALL_DETECT_CM);
   isWallRight = (distRight < WALL_DETECT_CM);
+}
+
+void updateSensors() {
+  static unsigned long lastPing = 0;
+  static int sensorState = 0;
+  
+  // Non-blocking round-robin: ping one sensor every 15ms.
+  // This prevents the 135ms stall during the motion PID loop!
+  if (millis() - lastPing >= 15) {
+    switch (sensorState) {
+      case 0:
+        distFront = readUltrasonic(US_FRONT_ECHO);
+        isWallFront = (distFront < WALL_DETECT_CM);
+        sensorState = 1;
+        break;
+      case 1:
+        distLeft = readUltrasonic(US_LEFT_ECHO);
+        isWallLeft  = (distLeft  < WALL_DETECT_CM);
+        sensorState = 2;
+        break;
+      case 2:
+        distRight = readUltrasonic(US_RIGHT_ECHO);
+        isWallRight = (distRight < WALL_DETECT_CM);
+        sensorState = 0;
+        break;
+    }
+    lastPing = millis();
+  }
 }
 
 bool wallFront() { return isWallFront; }

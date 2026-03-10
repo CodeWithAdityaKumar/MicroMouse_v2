@@ -1,9 +1,9 @@
-// Test: Stage 6 — Exploration Mode
-// This is the first PHYSICAL integration test. The robot will:
-//   1. Start at (0,0) facing NORTH
-//   2. On each step: read sensors, update maze, flood fill, choose dir, turn, move
-//   3. Stop when it reaches the goal zone (center 4 cells)
-// Serial Monitor will show coordinates and maze state after each step.
+// Test: Stage 7 — Explore and Speed Run
+// This is the final integration test simulating a true Micromouse run.
+// 1. Robot starts at (0,0) facing NORTH and explores the maze using floodfill.
+// 2. Goal reached: Stops, prints maze and optimal path.
+// 3. User physically moves robot back to (0,0) facing NORTH.
+// 4. User clicks button. Robot executes speed run along optimal path.
 
 #include "config.h"
 #include "motion.h"
@@ -12,16 +12,17 @@
 #include "encoders.h"
 #include "sensors.h"
 #include "maze.h"
+#include "floodfill.h"
 #include "navigation.h"
 #include <Arduino.h>
 
-// ── Button state machine ─────────────────────────────────────────────────────
-enum TestState { TST_IDLE, TST_CALIBRATING, TST_READY, TST_EXPLORING, TST_DONE };
+enum TestState { TST_IDLE, TST_CALIBRATING, TST_EXPLORING, TST_SOLVED, TST_RUNNING, TST_DONE };
 TestState state = TST_IDLE;
 
 unsigned long buttonPressTime = 0;
 bool buttonHeld = false;
 
+// ── Button state machine ─────────────────────────────────────────────────────
 bool checkLongPress() {
   if (digitalRead(BUTTON_PIN) == LOW) {
     if (buttonPressTime == 0) buttonPressTime = millis();
@@ -46,13 +47,13 @@ void setup() {
   initMotion();
   initSensors();
 
-  Serial.println(F("=== Stage 6: Exploration Mode ==="));
+  Serial.println(F("=== Stage 7: Explore & Speed Run ==="));
   Serial.println(F("Place robot at maze position (0,0) facing NORTH."));
-  Serial.println(F("Click button to calibrate IMU."));
+  Serial.println(F("Click button to calibrate IMU and start exploration."));
 }
 
 void loop() {
-  // ── Long-press = reset ─────────────────────────────────────────────────────
+  // Long press reset
   if (checkLongPress()) {
     Serial.println(F("\n[RESET] Returning to IDLE."));
     state = TST_IDLE;
@@ -60,12 +61,11 @@ void loop() {
     delay(500);
     buttonHeld = false;
     buttonPressTime = 0;
-    Serial.println(F("Click button to calibrate IMU."));
+    Serial.println(F("Place at (0,0) NORTH. Click to Calibrate & Explore."));
     return;
   }
 
   switch (state) {
-
     case TST_IDLE:
       if (digitalRead(BUTTON_PIN) == LOW && !buttonHeld) {
         waitForRelease();
@@ -77,51 +77,49 @@ void loop() {
       Serial.println(F("Calibrating IMU — keep bot STILL..."));
       initIMU();
       
-      // Initialize at (7,0) facing NORTH for right-side start.
-      // Modify to (0,0, NORTH) if starting from the left side later.
-      initNavigation(7, 0, NORTH);
+      Serial.println(F("Initializing Navigation..."));
+      initNavigation(0, 0, NORTH);
       
-      Serial.println(F("Ready! Click button to START EXPLORATION."));
-      state = TST_READY;
-      break;
-
-    case TST_READY:
-      if (digitalRead(BUTTON_PIN) == LOW && !buttonHeld) {
-        waitForRelease();
-        delay(500); // Small pause before launch
-        Serial.println(F("Starting exploration..."));
-        state = TST_EXPLORING;
-      }
+      Serial.println(F("Starting exploration..."));
+      delay(1000);
+      state = TST_EXPLORING;
       break;
 
     case TST_EXPLORING: {
-      // Log current position before moving
-      Serial.print(F("Pos: ("));
-      Serial.print(botX); Serial.print(F(","));
-      Serial.print(botY); Serial.print(F(") Dir: "));
-      const char* dNames[] = { "N", "E", "S", "W" };
-      Serial.println(dNames[botDir]);
-
-      // Execute one explore step
       bool atGoal = exploreStep();
-
       if (atGoal) {
         Serial.println(F("\n*** GOAL REACHED! ***"));
-        Serial.print(F("Final position: ("));
-        Serial.print(botX); Serial.print(F(","));
-        Serial.print(botY); Serial.println(F(")"));
-        Serial.println(F("Hold button to reset and run again."));
-        
-        // Print final maze state
         printMaze();
         
-        state = TST_DONE;
+        Serial.println(F("Computing Shortest Path (Speed Run Profile)..."));
+        computeSpeedRunPath(); // Generates F/L/R string
+        
+        Serial.println(F("\n--- EXPLORATION COMPLETE ---"));
+        Serial.println(F("1. Pick up the robot."));
+        Serial.println(F("2. Place it back at START (0,0) facing NORTH."));
+        Serial.println(F("3. Click button to EXECUTE Speed Run."));
+        state = TST_SOLVED;
       }
       break;
     }
 
+    case TST_SOLVED:
+      if (digitalRead(BUTTON_PIN) == LOW && !buttonHeld) {
+        waitForRelease();
+        Serial.println(F("Recalibrating IMU for Speed Run... Keep STILL."));
+        initIMU(); // Recalibrate in case the user tilted it when picking it up
+        delay(1000); 
+        state = TST_RUNNING;
+      }
+      break;
+
+    case TST_RUNNING:
+      executeSpeedRun();
+      Serial.println(F("Hold button to reset."));
+      state = TST_DONE;
+      break;
+
     case TST_DONE:
-      // Wait for long-press reset
       break;
   }
 }

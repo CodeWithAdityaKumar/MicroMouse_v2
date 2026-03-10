@@ -1,0 +1,6 @@
+1. front wall acche se detect nahi ker raha hai aur detect v ker raha hai to apne front wall se distance maintain nahi ker raha hai
+
+2. humare paas jo maze hai usme 2 starting openings hai ek left se aur ek right se, left se achhe se chal raha hai but right se nhi. jab hum right se start ker rahe hai aur second cell me aage aur right se wall hai aur left me opening hai but ye bot forward movement hi ker raha hai left nahi turn ker raha. ise fix kero 
+
+
+3. ab ye right wala issue solve ho gaya hai but ab ye pura explore nhi ker raha, pehle left wale code me pura explore kerke center me chala jaata tha but ab wo v nahi jaa jaa raha hai. isse fix ker aur isse working kero
